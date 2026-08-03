@@ -1,5 +1,7 @@
 # InkOS 1.7.2
 Release Date: 2026-08-03
+# InkOS 1.7.2
+Release Date: 2026-08-03
 # Changelog
 
 InkOS Docker 镜像版本记录。
