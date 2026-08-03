@@ -4,21 +4,6 @@
 InkOS Docker 镜像版本记录。
 
 
-
-格式：
-
-```
-版本
-
-发布日期
-
-变更内容
-
-安全状态
-```
-
-
-
 ---
 
 # v0.0.0
@@ -36,50 +21,44 @@ Initial Release
 
 
 
-内容：
+## 新增
 
 
 - 首次发布 InkOS Docker 镜像
 - 基于 node:22-bookworm-slim
-- 支持 Docker Compose
+- 支持 Docker Compose 部署
 - 支持 amd64 / arm64
 - 集成 GitHub Actions 自动构建
+- 自动同步 InkOS 上游版本
 - 集成 Trivy 安全扫描
-- 集成 SBOM 生成
+- 集成 GitHub Security
+- 自动生成 SBOM
 
 
 
-安全：
+## 数据目录
+
+
+支持：
+
+
+```
+/root/.inkos
+
+/workspace
+
+/logs
+```
+
+
+
+## 安全状态
+
 
 ```
 PASS
 ```
 
-
-
----
-
-# 后续版本
-
-
-示例：
-
-
-## v1.x.x
-
-
-更新：
-
-- 同步 InkOS 上游版本
-- 更新 Docker 依赖
-- 优化构建流程
-
-
-安全：
-
-```
-PASS
-```
 
 
 ---
@@ -87,20 +66,20 @@ PASS
 # 版本规则
 
 
-镜像版本跟随 InkOS 上游版本。
+Docker 镜像版本跟随 InkOS 上游版本。
 
 
 例如：
 
 
-上游：
+InkOS:
 
 ```
 v1.2.0
 ```
 
 
-Docker：
+Docker:
 
 ```
 bugseeker/inkos:v1.2.0
@@ -108,8 +87,7 @@ bugseeker/inkos:v1.2.0
 
 
 
-同时保持：
-
+同时维护：
 
 ```
 bugseeker/inkos:latest
@@ -127,11 +105,15 @@ bugseeker/inkos:latest
 
 ↓
 
-自动检测
+版本检测
 
 ↓
 
-构建镜像
+源码固定版本构建
+
+↓
+
+Docker Buildx
 
 ↓
 
@@ -139,15 +121,23 @@ bugseeker/inkos:latest
 
 ↓
 
-生成SBOM
+SBOM生成
 
 ↓
 
-发布Docker Hub
-
-↓
-
-更新Release
+Docker Hub发布
 ```
 
 
+
+---
+
+# 维护仓库
+
+
+https://github.com/LetterCard/inkos-docker
+
+
+维护者：
+
+bugseeker
