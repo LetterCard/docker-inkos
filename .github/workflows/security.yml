@@ -12,13 +12,13 @@ on:
 permissions:
   contents: write
   security-events: write
+  actions: read
 
 env:
   IMAGE_NAME: bugseeker/inkos
 
 jobs:
   security:
-
     if: github.event.workflow_run.conclusion == 'success'
 
     runs-on: ubuntu-latest
@@ -36,9 +36,7 @@ jobs:
           mkdir -p security-reports
 
 
-      # -------------------------
       # Trivy Vulnerability Report
-      # -------------------------
 
       - name: Trivy Scan Report
         continue-on-error: true
@@ -51,9 +49,7 @@ jobs:
           ignore-unfixed: true
 
 
-      # -------------------------
       # Trivy SARIF
-      # -------------------------
 
       - name: Trivy SARIF
         continue-on-error: true
@@ -68,14 +64,13 @@ jobs:
 
       - name: Upload GitHub Security
         if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
 
 
-      # -------------------------
       # SBOM
-      # -------------------------
 
       - name: Generate SBOM
         continue-on-error: true
@@ -86,9 +81,7 @@ jobs:
           output-file: security-reports/sbom.spdx.json
 
 
-      # -------------------------
       # Security Status
-      # -------------------------
 
       - name: Generate Security Status
         shell: bash
@@ -122,18 +115,12 @@ Reports:
 EOF
 
 
-      # -------------------------
-      # Check Reports
-      # -------------------------
-
       - name: Check Reports
         run: |
           ls -lah security-reports
 
 
-      # -------------------------
       # Commit Reports
-      # -------------------------
 
       - name: Commit Security Reports
         shell: bash
