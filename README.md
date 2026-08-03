@@ -272,7 +272,8 @@ node:22-bookworm-slim
 ## 安全报告
 最新安全报告：
 https://github.com/LetterCard/inkos-docker/tree/main/security-reports
-![InkOS Security Report](https://raw.githubusercontent.com/LetterCard/inkos-docker/main/security-reports/security-report.png)
+
+![InkOS Docker Security Report](security-reports/security-report.png)
 
 ```
 security-reports/
