@@ -4,29 +4,29 @@
 ## InkOS Docker 安全策略
 
 
-本项目致力于提供一个：
+本项目：
 
-- 稳定
-- 可维护
-- 可审计
-
-的 InkOS Docker 运行环境。
+https://github.com/LetterCard/inkos-docker
 
 
-本镜像由：
+为 InkOS 提供 Docker 化部署方案。
 
-**bugseeker**
 
-维护。
+目标：
+
+- 稳定运行
+- 安全维护
+- 可追踪构建
+- 透明发布
 
 
 
 ---
 
-# 🔐 安全设计原则
+# 🔐 安全设计
 
 
-本 Docker 镜像遵循：
+本项目采用：
 
 
 ```
@@ -34,15 +34,15 @@
 
 +
 
-自动漏洞检测
+自动漏洞扫描
 
 +
 
-供应链透明
+软件供应链管理
 
 +
 
-数据隔离
+版本可追溯
 ```
 
 
@@ -54,25 +54,23 @@
 
 使用：
 
-
 ```
 node:22-bookworm-slim
 ```
 
 
-原因：
-
+优势：
 
 - 官方维护
-- 生命周期明确
-- 系统组件精简
+- 精简系统
 - 减少攻击面
+- 生命周期明确
 
 
 
 ---
 
-# 🔍 自动漏洞扫描
+# 🔍 自动安全检测
 
 
 每次镜像发布流程：
@@ -87,47 +85,49 @@ Trivy Scan
 
 ↓
 
-SBOM Generate
+GitHub Security
 
 ↓
 
-Docker Hub Release
+SBOM生成
+
+↓
+
+Docker Hub发布
 ```
 
 
 
 ---
 
-## Trivy 检测范围
+# 🛡 Trivy 漏洞扫描
 
 
-扫描：
+扫描范围：
 
 
-### 系统层
+## 系统组件
 
 
 包括：
 
-- Debian 软件包
-- 系统库
+- Linux 软件包
+- 基础镜像漏洞
 - 已知 CVE
 
 
-
-### 应用层
+## 应用依赖
 
 
 包括：
 
 - Node.js 依赖
-- npm package
+- npm/pnpm 包
 - 第三方组件
 
 
 
 重点关注：
-
 
 ```
 HIGH
@@ -142,7 +142,7 @@ CRITICAL
 # 📋 SBOM 软件清单
 
 
-每个版本自动生成：
+每个版本生成：
 
 
 ```
@@ -150,73 +150,93 @@ Software Bill of Materials
 ```
 
 
+包含：
 
-记录：
-
-
-- 软件名称
-- 软件版本
+- 软件组件
+- 版本信息
 - 依赖关系
-- 软件来源
 
 
 
 用途：
 
-
-- 软件供应链管理
-- 安全审计
+- 软件供应链审计
 - 漏洞追踪
+- 安全分析
 
 
 
 ---
 
-# 🔄 镜像发布安全流程
+# 📊 安全报告
 
 
-完整流程：
+公开安全报告：
+
+
+https://github.com/LetterCard/inkos-docker/tree/main/security-reports
+
+
+
+包含：
 
 
 ```
-InkOS 上游更新
+security-status.md
 
-        ↓
+sbom.spdx.json
+```
 
-版本检测
 
-        ↓
 
-Docker Buildx
+GitHub Security：
 
-        ↓
+https://github.com/LetterCard/inkos-docker/security
 
-镜像生成
 
-        ↓
 
-漏洞扫描
+---
 
-        ↓
+# 🔑 密钥管理
 
-SBOM生成
 
-        ↓
+本项目不会提交：
 
-Docker Hub发布
+```
+.env
+
+API Key
+
+Token
+
+Secret
+```
+
+
+
+用户配置应该保存于：
+
+
+```
+/root/.inkos
+```
+
+
+
+例如：
+
+```
+/vol1/docker/inkos/config
 ```
 
 
 
 ---
 
-# 📦 数据安全
+# 💾 数据安全
 
 
-本镜像不会把用户数据写入镜像。
-
-
-所有用户数据通过 Volume 保存。
+用户数据通过 Docker Volume 保存。
 
 
 包括：
@@ -232,69 +252,11 @@ Docker Hub发布
 
 
 
-升级镜像时：
+升级镜像不会覆盖：
 
-不会覆盖：
-
-- API 配置
-- 小说项目
-- 创作数据
-
-
-
----
-
-# 🔑 密钥管理
-
-
-推荐：
-
-不要将：
-
-```
-.env
-
-secrets.json
-
-API Key
-```
-
-
-提交到 GitHub。
-
-
-
-建议：
-
-保存于：
-
-```
-/vol1/docker/inkos/config
-```
-
-
-
----
-
-# 🛡 私有 CI/CD
-
-
-本镜像构建仓库采用私有 GitHub 仓库。
-
-
-目的：
-
-- 保护 CI/CD 配置
-- 防止泄露构建细节
-- 保护 Docker Hub 发布凭证
-
-
-
-公开信息：
-
-- Docker 镜像
-- README
-- 安全说明
+- 用户配置
+- 创作项目
+- 日志数据
 
 
 
@@ -305,11 +267,13 @@ API Key
 
 如果发现安全问题：
 
-请通过项目维护渠道反馈。
+请提交 Issue：
+
+https://github.com/LetterCard/inkos-docker/issues
 
 
 
-请提供：
+建议提供：
 
 - 问题描述
 - 影响范围
@@ -318,22 +282,23 @@ API Key
 
 
 
-我们会尽快评估并处理。
-
-
-
 ---
 
-# 安全更新原则
+# 📦 维护信息
 
 
-当发现严重漏洞：
+上游项目：
 
-将优先：
-
-1. 修复构建环境
-2. 更新基础镜像
-3. 重新扫描
-4. 发布修复版本
+https://github.com/Narcooo/inkos
 
 
+
+Docker 维护：
+
+https://github.com/LetterCard/inkos-docker
+
+
+
+维护者：
+
+**bugseeker**
