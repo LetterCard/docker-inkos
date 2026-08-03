@@ -4,42 +4,40 @@
 # Base:
 #   node:22-bookworm-slim
 #
-# Upstream:
+# Source:
 #   https://github.com/Narcooo/inkos
 #
-# Docker Solution:
+# Docker Maintainer:
 #   https://github.com/LetterCard
 #
-# Maintainer:
-#   bugseeker
+# Image:
+#   bugseeker/inkos
+#
 # =====================================================
 
 # =====================================================
-# Builder Stage
+# Build Stage
 # =====================================================
 FROM node:22-bookworm-slim AS builder
 
-WORKDIR /build
+WORKDIR /app
 
-# Install base dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
     python3 \
     make \
     g++ \
+    git \
     ca-certificates \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Enable pnpm via Corepack
+# Enable pnpm
 RUN corepack enable \
     && corepack prepare pnpm@9 --activate
 
-# Build version controlled by GitHub Actions
-ARG INKOS_VERSION=latest
-
-# Clone InkOS repository
-RUN git clone --depth=1 https://github.com/Narcooo/inkos.git .
+# Copy InkOS source
+COPY . .
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -52,7 +50,6 @@ RUN pnpm build
 # =====================================================
 FROM node:22-bookworm-slim
 
-# Metadata labels
 LABEL org.opencontainers.image.title="InkOS"
 LABEL org.opencontainers.image.description="InkOS Story Creation AI Agent Docker Image"
 LABEL org.opencontainers.image.source="https://github.com/Narcooo/inkos"
@@ -61,26 +58,29 @@ LABEL maintainer="bugseeker"
 
 WORKDIR /app
 
-# Copy built artifacts from builder stage
-COPY --from=builder /build /app
+# Copy build result
+COPY --from=builder /app /app
 
-# Install runtime environment
+# Enable pnpm
 RUN corepack enable \
-    && npm install -g .
+    && corepack prepare pnpm@9 --activate
 
-# Create persistent directories
+# Install production dependencies
+RUN pnpm install --prod
+
+# Persistent directories
 RUN mkdir -p \
     /root/.inkos \
     /workspace \
     /logs
 
-# Set default working directory
+# Workspace
 WORKDIR /workspace
 
-# Expose InkOS Studio port
+# InkOS Web Port
 EXPOSE 4567
 
-# Health check configuration
+# Health Check
 HEALTHCHECK \
     --interval=30s \
     --timeout=10s \
@@ -88,5 +88,5 @@ HEALTHCHECK \
     --retries=3 \
     CMD curl -fs http://localhost:4567 || exit 1
 
-# Start InkOS Studio
+# Start command
 CMD ["inkos", "studio", "-p", "4567"]
