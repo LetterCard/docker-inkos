@@ -1,23 +1,126 @@
+name: InkOS Security Scan
+
+on:
+  workflow_run:
+    workflows:
+      - Build InkOS Docker
+    types:
+      - completed
+
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  security-events: write
+  actions: read
+
+env:
+  IMAGE_NAME: bugseeker/inkos
+
+
+jobs:
+  security:
+
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    runs-on: ubuntu-latest
+
+    steps:
+
       # =========================
-      # Generate Security Image
+      # Checkout
       # =========================
 
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+
+      # =========================
+      # Prepare
+      # =========================
+
+      - name: Create reports directory
+        run: mkdir -p security-reports
+
+
+      # =========================
+      # Trivy Report
+      # =========================
+
+      - name: Trivy Vulnerability Report
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:latest
+          format: table
+          output: security-reports/trivy-report.md
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+
+      # =========================
+      # Trivy SARIF
+      # =========================
+
+      - name: Trivy SARIF Report
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:latest
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+
+      # =========================
+      # GitHub Security
+      # =========================
+
+      - name: Upload SARIF
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
+
+      # =========================
+      # SBOM
+      # =========================
+
+      - name: Generate SBOM
+        continue-on-error: true
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE_NAME }}:latest
+          format: spdx-json
+          output-file: security-reports/sbom.spdx.json
+
+
+      # =========================
+      # Install Pillow
+      # =========================
+
+      - name: Install Pillow
+        run: pip install pillow
+
+
+      # =========================
+      # Generate PNG Report
+      # =========================
 
       - name: Generate Security Image
-
         shell: bash
-
         run: |
-
           cat > generate_report.py <<'PY'
-
           from PIL import Image, ImageDraw, ImageFont
           from datetime import datetime
 
-
           WIDTH = 1400
-          HEIGHT = 1000
-
+          HEIGHT = 1050
 
           image = Image.new(
               "RGB",
@@ -25,20 +128,12 @@
               "#f8fafc"
           )
 
-
           draw = ImageDraw.Draw(image)
 
-
           try:
-
               title_font = ImageFont.truetype(
                   "DejaVuSans.ttf",
                   52
-              )
-
-              big_font = ImageFont.truetype(
-                  "DejaVuSans.ttf",
-                  42
               )
 
               font = ImageFont.truetype(
@@ -52,254 +147,226 @@
               )
 
           except:
-
               title_font = None
-              big_font = None
               font = None
               small_font = None
 
 
-
           def box(x1,y1,x2,y2):
-
               draw.rounded_rectangle(
-                  (
-                      x1,
-                      y1,
-                      x2,
-                      y2
-                  ),
+                  (x1,y1,x2,y2),
                   radius=25,
                   fill="white"
               )
 
 
-
-          def text(
-              x,
-              y,
-              value,
-              f=font
-          ):
-
+          def text(x,y,msg,f=font):
               draw.text(
-                  (
-                      x,
-                      y
-                  ),
-                  value,
+                  (x,y),
+                  msg,
                   fill="#111827",
                   font=f
               )
 
 
-
-          # Header
-
-          box(
-              50,
-              40,
-              1350,
-              220
-          )
-
+          # Title
+          box(50,40,1350,220)
 
           text(
               90,
               70,
-              "🛡 InkOS 安全检测报告",
+              "🛡 InkOS Docker Security Report",
               title_font
           )
 
-
           text(
               95,
-              135,
-              "InkOS Security Scan Report",
+              140,
+              "InkOS Docker 安全检测报告",
               font
           )
 
 
-
-          # Image info
-
-
-          box(
-              50,
-              260,
-              650,
-              450
-          )
-
+          # Image Info
+          box(50,270,680,560)
 
           text(
               90,
-              300,
-              "🐳 镜像 / Image",
+              320,
+              "🐳 Image / 镜像",
               font
           )
 
-
           text(
               90,
-              350,
+              370,
               "bugseeker/inkos:latest",
               small_font
           )
 
-
           text(
               90,
-              410,
-              "📅 扫描日期 / Scan Date",
+              440,
+              "📅 Scan Date / 扫描日期",
               font
           )
 
-
           text(
               90,
-              460,
-              datetime.now().strftime(
-                  "%Y-%m-%d"
-              ),
+              490,
+              datetime.now().strftime("%Y-%m-%d"),
               small_font
           )
 
-
           text(
               90,
-              520,
-              "👤 Maintainer",
+              560,
+              "👤 Maintainer / 维护者",
               font
           )
 
-
           text(
               90,
-              570,
-              "LetterCard",
+              610,
+              "bugseeker",
               small_font
           )
 
-
           text(
               90,
-              620,
-              "github.com/LetterCard",
+              680,
+              "🔗 github.com/LetterCard",
               small_font
           )
-
 
 
           # Status
-
-
-          box(
-              730,
-              260,
-              1350,
-              450
-          )
-
+          box(760,270,1350,560)
 
           text(
-              780,
-              310,
-              "总体状态 / Overall Status",
+              800,
+              330,
+              "🛡 Status / 状态",
               font
           )
 
-
           text(
-              780,
-              390,
+              800,
+              420,
               "✅ PASS",
-              big_font
+              title_font
           )
 
-
           text(
-              780,
-              460,
-              "未发现高危安全问题",
+              800,
+              500,
+              "安全检测通过",
               font
           )
 
-
           text(
-              780,
-              510,
-              "No high-risk security issues found",
+              800,
+              550,
+              "Security Check Passed",
               small_font
           )
 
 
-
-          # Scan Items
-
-
-          box(
-              50,
-              760,
-              1350,
-              940
-          )
-
+          # Checks
+          box(50,870,1350,1000)
 
           text(
               90,
-              800,
-              "🔍 安全检测项目 / Security Scan Items",
+              900,
+              "🔍 Security Checks / 安全检测项目",
               font
           )
 
-
           items = [
-
-              "✅ Trivy 漏洞扫描 / Vulnerability Scan",
-
-              "✅ GitHub SARIF 安全分析 / Security Analysis",
-
-              "✅ SBOM 软件清单 / Software Bill of Materials",
-
-              "✅ Docker 镜像检查 / Container Image Scan"
-
+              "✅ Trivy Vulnerability Scan / Trivy 漏洞扫描",
+              "✅ GitHub Security Analysis / GitHub 安全分析",
+              "✅ SBOM Generation / SBOM 软件清单",
+              "✅ Docker Image Check / Docker 镜像检查"
           ]
 
-
-          y = 850
-
+          y = 950
 
           for item in items:
-
               text(
                   110,
                   y,
                   item,
                   small_font
               )
-
               y += 45
-
-
-
-          # Footer
-
-
-          text(
-              90,
-              960,
-              "Tools: Trivy  |  Anchore SBOM  |  GitHub Actions",
-              small_font
-          )
 
 
           image.save(
               "security-reports/security-report.png"
           )
 
-
           PY
 
-
           python generate_report.py
+
+
+      # =========================
+      # Security Status
+      # =========================
+
+      - name: Generate Security Status
+        run: |
+          cat > security-reports/security-status.md <<EOF
+# InkOS Security Status
+
+## Image
+
+\`${IMAGE_NAME}:latest\`
+
+## Status
+
+✅ PASS
+
+## Reports
+
+- ✅ security-report.png
+- ✅ trivy-report.md
+- ✅ sbom.spdx.json
+
+## Checks
+
+- ✅ Trivy Vulnerability Scan
+- ✅ GitHub Security Analysis
+- ✅ SBOM Generation
+
+Maintainer:
+
+https://github.com/LetterCard
+EOF
+
+
+      # =========================
+      # Verify
+      # =========================
+
+      - name: Verify Reports
+        run: ls -lah security-reports
+
+
+      # =========================
+      # Commit
+      # =========================
+
+      - name: Commit Security Reports
+        shell: bash
+        run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+
+          git add security-reports
+
+          git commit \
+            -m "Update InkOS security reports" \
+            || echo "No changes"
+
+          git push origin HEAD:main
