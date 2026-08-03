@@ -1,0 +1,47 @@
+name: Security Scan
+
+on:
+  workflow_run:
+    workflows:
+      - Build InkOS Docker
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ==========================
+      # Trivy漏洞扫描
+      # ==========================
+      - name: Trivy Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: bugseeker/inkos:latest
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+
+      # ==========================
+      # SBOM生成
+      # ==========================
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: bugseeker/inkos:latest
+
+      # ==========================
+      # 保存报告
+      # ==========================
+      - name: Upload Security Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: inkos-security-report
+          path: ./sbom.json
