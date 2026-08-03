@@ -62,7 +62,7 @@ jobs:
 
       - name: Trivy Vulnerability Report
         continue-on-error: true
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@master
         with:
 
           image-ref: ${{ env.IMAGE_NAME }}:latest
@@ -85,7 +85,7 @@ jobs:
 
       - name: Trivy SARIF Report
         continue-on-error: true
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@master
 
         with:
 
@@ -108,7 +108,7 @@ jobs:
 
         continue-on-error: true
 
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action@v4
 
         with:
 
@@ -185,6 +185,7 @@ jobs:
 
 
           try:
+
               font_title = ImageFont.truetype(
                   "DejaVuSans.ttf",
                   55
@@ -247,16 +248,16 @@ jobs:
           y = 60
 
 
-          for index,line in enumerate(lines):
+          for index, line in enumerate(lines):
 
               draw.text(
-                  (80,y),
+                  (80, y),
                   line,
                   fill="black",
                   font=font_title if index == 0 else font
               )
 
-              y += 50 if index else 90
+              y += 90 if index == 0 else 50
 
 
 
@@ -332,7 +333,7 @@ jobs:
 
 
       # =========================
-      # Commit
+      # Commit Reports
       # =========================
 
 
