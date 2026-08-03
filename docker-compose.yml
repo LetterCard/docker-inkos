@@ -7,33 +7,15 @@ services:
     ports:
       - "4567:4567"
     volumes:
-      # =====================================
       # InkOS 全局配置
-      # 包含:
-      # ~/.inkos
-      # API Key
-      # LLM配置
-      # 服务配置
-      # =====================================
+      # API Key / 模型配置
       - /vol1/docker/inkos/config:/root/.inkos
 
-      # =====================================
-      # 小说项目工作目录
-      # 对应:
-      # InkOS project workspace
-      # 保存:
-      # 小说
-      # 角色
-      # story状态
-      # memory
-      # =====================================
+      # 创作项目目录
+      # 小说 / 剧本 / 世界观数据
       - /vol1/docker/inkos/workspace:/workspace
 
-      # =====================================
       # 日志
-      # =====================================
       - /vol1/docker/inkos/logs:/logs
-
     environment:
       TZ: Asia/Shanghai
-      NODE_ENV: production
