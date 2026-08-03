@@ -64,18 +64,32 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Update VERSION
+      - name: Update VERSION and CHANGELOG
         if: steps.compare.outputs.changed == 'true'
+        shell: bash
         run: |
-          echo "${{ steps.version.outputs.version }}" > VERSION
+          VERSION=${{ steps.version.outputs.version }}
+          DATE=$(date +"%Y-%m-%d")
+
+          echo "$VERSION" > VERSION
+
+          if [ -f CHANGELOG.md ]; then
+            sed -i \
+              "0,/^# v.*/s//\# $VERSION/" \
+              CHANGELOG.md
+
+            sed -i \
+              "0,/^202[0-9]-[0-9][0-9]-[0-9][0-9]/s//${DATE}/" \
+              CHANGELOG.md
+          fi
 
           git config user.name github-actions
           git config user.email actions@github.com
 
-          git add VERSION
+          git add VERSION CHANGELOG.md
 
           git commit -m \
-            "Update InkOS version ${{ steps.version.outputs.version }}"
+            "Update InkOS version $VERSION"
 
           git push
 
