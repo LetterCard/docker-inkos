@@ -1,24 +1,79 @@
-FROM node:22-bookworm
+# =====================================================
+# InkOS Docker Image
+#
+# Base Image:
+#   node:22-bookworm-slim
+#
+# Dockerfile based on LetterCard Docker solution:
+#   https://github.com/LetterCard
+#
+# Maintained by:
+#   bugseeker
+#
+# Upstream:
+#   https://github.com/Narcooo/inkos
+# =====================================================
 
-# 设置工作目录
+# =====================================================
+# Builder Stage
+# =====================================================
+FROM node:22-bookworm-slim AS builder
+
 WORKDIR /app
 
-# 启用 Corepack 并激活 pnpm
-RUN corepack enable && \
-    corepack prepare pnpm@9 --activate
+# Install build dependencies
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+        python3 \
+        make \
+        g++ \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# 克隆 InkOS 源码
-RUN git clone https://github.com/Narcooo/inkos.git .
+# Enable pnpm
+RUN corepack enable \
+    && corepack prepare pnpm@9 --activate
 
-# 安装依赖并构建项目
-RUN pnpm install --frozen-lockfile && \
-    pnpm build
+# Clone upstream InkOS
+RUN git clone \
+    --depth=1 \
+    https://github.com/Narcooo/inkos.git .
 
-# 全局安装 CLI
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Build application
+RUN pnpm build
+
+# =====================================================
+# Runtime Stage
+# =====================================================
+FROM node:22-bookworm-slim
+
+LABEL maintainer="bugseeker"
+LABEL org.opencontainers.image.authors="LetterCard, bugseeker"
+LABEL org.opencontainers.image.title="InkOS"
+LABEL org.opencontainers.image.description="InkOS Docker Image"
+LABEL org.opencontainers.image.source="https://github.com/Narcooo/inkos"
+LABEL org.opencontainers.image.documentation="https://github.com/LetterCard"
+
+WORKDIR /app
+
+# Copy build result
+COPY --from=builder /app /app
+
+# Install InkOS globally
 RUN npm install -g .
 
-# 切换到数据目录
+# Create persistent directories
+RUN mkdir -p \
+    /root/.inkos \
+    /data/books \
+    /data/logs
+
 WORKDIR /data
 
-# 启动命令
-CMD ["inkos"]
+EXPOSE 4567
+
+CMD ["inkos", "studio", "-p", "4567"]
