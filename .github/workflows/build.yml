@@ -1,0 +1,54 @@
+name: Build InkOS Docker
+
+on:
+  # 每天凌晨2点自动检查构建
+  schedule:
+    - cron: "0 2 * * *"
+  # 支持手动触发
+  workflow_dispatch:
+
+# 授予写入仓库内容的权限（用于后续可能的版本更新提交）
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout 当前仓库
+        uses: actions/checkout@v4
+
+      # 获取 InkOS 上游最新版本号
+      - name: Get InkOS Version
+        id: version
+        run: |
+          git clone --depth=1 https://github.com/Narcooo/inkos.git upstream
+          cd upstream
+          # 获取最新标签，若无标签则使用commit hash
+          VERSION=$(git describe --tags --always)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # 登录 Docker Hub
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      # 设置 Docker Buildx（支持多平台构建）
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 构建并推送 Docker 镜像
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            bugseeker/inkos:latest
+            bugseeker/inkos:${{ steps.version.outputs.version }}
+          # 可选：启用缓存加速构建
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
