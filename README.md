@@ -1,224 +1,200 @@
+# ✍️ InkOS Docker
 
-# 🌟 什么是 InkOS？
+## Story Creation AI Agent
 
-InkOS 是一个专注于**故事创作（Story Creation）的 AI Agent 系统**。
 
-它不是简单的文本生成工具，而是一个围绕创作流程设计的智能创作助手。
+InkOS 是一个面向小说与故事创作的 AI Agent 系统。
 
-InkOS 可以帮助创作者从：
 
-```
-创意构思
-    ↓
-世界观设计
-    ↓
-角色设定
-    ↓
-剧情规划
-    ↓
-章节创作
-    ↓
-内容修改
-    ↓
-多语言输出
-```
+帮助创作者完成：
 
-完成完整的故事生产流程。
+- 📖 小说创作
+- 🎬 剧本开发
+- 🌍 世界观构建
+- 🎭 角色设计
+- 🔄 内容审阅与修改
 
-适用于：
 
-- 小说作者
-- 编剧
-- 游戏剧情设计者
-- IP 创作者
-- 内容创作者
+通过 Docker 快速部署自己的 AI 创作工作空间。
 
----
-
-# 🚀 InkOS 可以做什么？
-
-## 📚 长篇小说创作
-
-帮助创建和维护：
-
-- 世界观
-- 人物关系
-- 故事情节
-- 章节内容
-- 长篇连载上下文
-
-适用于：
-
-- 网络小说
-- 系列故事
-- 长篇作品
-
----
-
-## 🎬 剧本与 IP 创作
-
-支持：
-
-- 影视剧本
-- 游戏剧情
-- 互动故事
-- IP 世界观开发
-
-帮助创作者快速完成：
-
-```
-想法
-    ↓
-设定
-    ↓
-剧情
-    ↓
-成稿
-```
-
----
-
-## 🎮 互动故事创作
-
-支持管理：
-
-- 角色状态
-- 世界规则
-- 剧情分支
-- 故事变量
-
-适合：
-
-- 互动小说
-- 文字游戏
-- 开放世界故事
-
----
-
-## 🌍 多语言创作
-
-支持：
-
-- 多语言写作
-- 内容翻译
-- 术语保持
-- 跨语言创作
-
-帮助作品面向更多语言市场。
 
 ---
 
 # 🐳 为什么使用这个 Docker 镜像？
 
-原始 InkOS 项目主要面向开发环境。
 
-本项目将 InkOS 进行 Docker 化适配，让它更加适合长期运行。
+官方 InkOS 更偏向开发者安装方式。
 
-**目标：** 让用户无需配置复杂 Node 环境，即可运行自己的 InkOS 服务。
 
-**提供：**
+本项目将 InkOS 封装为长期运行的 Docker 服务。
 
-- ✅ 一键部署
-- ✅ 自动更新
-- ✅ 多架构支持
-- ✅ NAS 支持
-- ✅ 数据持久化
-- ✅ 自动安全检测
-- ✅ Docker Compose 部署
+
+适合：
+
+- NAS 用户
+- 家庭服务器
+- 云服务器
+- Linux 主机
+
+
+提供：
+
+✅ 一键部署  
+✅ 自动跟随上游版本  
+✅ 固定版本镜像  
+✅ amd64 / arm64 支持  
+✅ 数据持久化  
+✅ 自动安全检测  
+
 
 ---
 
 # 📦 项目来源
 
+
 ## 上游项目
 
-**InkOS：** https://github.com/Narcooo/inkos
+InkOS：
 
----
+https://github.com/Narcooo/inkos
+
+
 
 ## Docker 化方案
 
-本镜像 Dockerfile 基于 **LetterCard Docker 方案**。
+https://github.com/LetterCard
 
-维护：https://github.com/LetterCard
 
----
 
 ## 镜像维护
 
-**Docker 镜像：** `bugseeker/inkos`
+Docker Hub：
 
-由 **bugseeker** 负责维护，包括：
+```
+bugseeker/inkos
+```
 
-- Docker 镜像构建
-- 自动化发布
+
+维护者：
+
+**bugseeker**
+
+
+负责：
+
+- Docker 构建
+- CI/CD 自动化
+- 镜像发布
+- 安全检测
 - NAS 部署优化
-- 安全检测流程
+
+
 
 ---
 
 # ⚙️ 镜像特性
 
+
 ## 🔄 自动跟随上游版本
+
 
 自动检测 InkOS 更新。
 
-**版本获取优先级：**
+
+版本优先级：
 
 ```
-Git Release Tag
-    ↓
+GitHub Release Tag
+
+↓
+
 package.json version
-    ↓
-Docker 镜像发布
+
+↓
+
+Docker Image
 ```
+
+
+无需手动重新构建。
+
 
 ---
 
-## 🏗 自动化构建
+## 🏗 自动构建流程
 
-完整流程：
 
 ```
 InkOS 更新
-    ↓
+
+↓
+
 GitHub Actions
-    ↓
+
+↓
+
 Docker Buildx
-    ↓
+
+↓
+
 安全扫描
-    ↓
-Docker Hub 发布
+
+↓
+
+SBOM生成
+
+↓
+
+Docker Hub发布
 ```
 
-无需人工重新编译。
 
 ---
 
-## 🖥 多架构支持
+## 🖥 支持架构
 
-支持：
 
 ```
 linux/amd64
+
 linux/arm64
 ```
+
 
 适用于：
 
 - Intel NAS
 - AMD NAS
-- ARM 服务器
+- ARM服务器
 - 云服务器
+
+
 
 ---
 
-## 🏷 版本管理
+# 🏷 镜像版本
 
-镜像提供：
 
-- **最新版本：** `bugseeker/inkos:latest`
-- **固定版本：** `bugseeker/inkos:v版本号`
+最新版本：
+
+```
+bugseeker/inkos:latest
+```
+
+
+固定版本：
+
+```
+bugseeker/inkos:v版本号
+```
+
+
+例如：
+
+```
+bugseeker/inkos:v1.2.0
+```
+
 
 支持：
 
@@ -226,148 +202,228 @@ linux/arm64
 - 稳定部署
 - 历史回滚
 
+
+
 ---
 
 # 🔐 安全体系
 
-长期运行服务，安全非常重要。本镜像建立自动化安全流程。
 
----
+镜像采用自动化安全检测流程。
+
 
 ## 基础镜像
 
-采用：`node:22-bookworm-slim`
+```
+node:22-bookworm-slim
+```
 
-优势：
+
+特点：
 
 - 官方维护
 - 精简系统
 - 减少攻击面
-- 定期更新
 
----
 
-## 漏洞扫描
 
-每次镜像发布后自动执行 **Trivy Security Scan**。
+## 自动检测
 
-检测：
 
-- 系统软件漏洞
-- Node.js 依赖
-- npm 组件风险
+每次发布执行：
 
-重点关注：`HIGH` 与 `CRITICAL`
+- Trivy 漏洞扫描
+- Node.js 依赖检查
+- SBOM 软件清单生成
 
----
 
-## SBOM 软件清单
+重点关注：
 
-自动生成 **Software Bill of Materials**。
+```
+HIGH
 
-包含：
+CRITICAL
+```
 
-- 软件组件
-- 依赖版本
-- 软件来源
 
-用于：
+详细安全说明：
 
-- 软件供应链管理
-- 漏洞追踪
-- 安全审计
+见：
 
----
+```
+SECURITY.md
+```
 
-## 安全报告
-
-安全扫描结果保存于 `GitHub Actions Artifact`。
-
-由于 CI/CD 仓库采用私有模式：
-
-- 不公开内部构建信息
-- 不泄露扫描细节
-- 保留完整审计记录
 
 ---
 
 # 💾 数据持久化
 
-所有用户数据通过 Docker Volume 保存。
 
-**目录：**
+Docker 镜像只负责运行环境。
 
-```
-/root/.inkos
-/data/books
-/data/logs
-```
 
-更新镜像不会影响：
+用户数据独立保存。
 
-- 创作项目
-- 配置文件
-- 日志
 
----
+目录：
 
-# 🏠 Docker Compose 部署
+|宿主机|容器|用途|
+|-|-|-|
+|config|/root/.inkos|InkOS配置|
+|workspace|/workspace|项目数据|
+|logs|/logs|运行日志|
 
-适用于：
 
-- 飞牛 NAS
-- 群晖 NAS
-- 威联通
-- Linux 服务器
+升级镜像不会影响：
+
+- API 配置
+- 小说项目
+- 创作数据
+
+
 
 ---
+
+# 🚀 快速部署
+
 
 ## 创建目录
 
+
+```bash
+mkdir -p /vol1/docker/inkos/{config,workspace,logs}
 ```
-/vol1/docker/inkos
-├── config
-├── books
-└── logs
-```
+
 
 ---
 
 ## docker-compose.yml
 
+
 ```yaml
 services:
+
   inkos:
     image: bugseeker/inkos:latest
     container_name: inkos
     restart: unless-stopped
+
     ports:
       - "4567:4567"
+
     volumes:
       - /vol1/docker/inkos/config:/root/.inkos
-      - /vol1/docker/inkos/books:/data/books
-      - /vol1/docker/inkos/logs:/data/logs
+      - /vol1/docker/inkos/workspace:/workspace
+      - /vol1/docker/inkos/logs:/logs
+
     environment:
       TZ: Asia/Shanghai
 ```
 
-**启动：**
+
+启动：
 
 ```bash
 docker compose up -d
 ```
 
-**访问：** http://NAS-IP:4567
+
+访问：
+
+```
+http://NAS-IP:4567
+```
+
+
 
 ---
 
-# 🔄 更新镜像
+# ⚙️ 配置参数
 
-获取最新版本：
+
+## Docker 环境变量
+
+
+|变量|默认值|说明|
+|-|-|-|
+|TZ|Asia/Shanghai|时区|
+
+
+
+---
+
+## InkOS 全局配置
+
+
+位置：
+
+```
+/vol1/docker/inkos/config/.env
+```
+
+
+示例：
+
+```env
+INKOS_LLM_PROVIDER=openai
+
+INKOS_LLM_BASE_URL=https://api.openai.com/v1
+
+INKOS_LLM_API_KEY=your_api_key
+
+INKOS_LLM_MODEL=gpt-4.1
+
+INKOS_DEFAULT_LANGUAGE=zh
+```
+
+
+---
+
+## 项目级配置
+
+
+位置：
+
+```
+workspace/项目名称/.env
+```
+
+
+用于：
+
+- 独立模型
+- 独立 API
+- 单项目参数
+
+
+
+优先级：
+
+```
+项目 .env
+
+↓
+
+全局 .env
+
+↓
+
+Docker environment
+```
+
+
+---
+
+# 🔄 更新
+
+
+拉取最新镜像：
 
 ```bash
 docker compose pull
 ```
+
 
 重新启动：
 
@@ -375,27 +431,48 @@ docker compose pull
 docker compose up -d
 ```
 
+
 ---
 
 # 📌 镜像地址
 
-**Docker Hub：** https://hub.docker.com/r/bugseeker/inkos
 
-**镜像：** `bugseeker/inkos`
+Docker Hub：
+
+https://hub.docker.com/r/bugseeker/inkos
+
+
+镜像：
+
+```
+bugseeker/inkos
+```
+
+
 
 ---
 
 # 🙏 致谢
 
-感谢：
 
-- **InkOS：** https://github.com/Narcooo/inkos
-- **Docker 化方案：** https://github.com/LetterCard
+InkOS：
+
+https://github.com/Narcooo/inkos
+
+
+Docker 方案：
+
+https://github.com/LetterCard
+
+
 
 感谢开源社区贡献。
+
+
 
 ---
 
 # License
+
 
 遵循 InkOS 原项目许可证。
