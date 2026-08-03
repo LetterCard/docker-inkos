@@ -290,18 +290,21 @@ node:22-bookworm-slim
 
 https://github.com/LetterCard/inkos-docker/tree/main/security-reports
 
-
+![InkOS Security Report](https://raw.githubusercontent.com/LetterCard/inkos-docker/main/security-reports/security-report.png)
 
 包含：
 
 ```
-security-status.md
+security-reports/
 
-trivy-report.md
-
-sbom.spdx.json
+├── security-report.png      ⭐ Docker Hub展示
+│
+├── security-status.md       简洁状态
+│
+├── trivy-report.md          完整漏洞扫描
+│
+└── sbom.spdx.json           软件供应链清单
 ```
-
 
 
 ---
