@@ -1,4 +1,4 @@
-name: Security Scan
+name: InkOS Security Scan
 
 on:
   workflow_run:
@@ -6,39 +6,82 @@ on:
       - Build InkOS Docker
     types:
       - completed
+  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+env:
+  IMAGE_NAME: bugseeker/inkos
 
 jobs:
   security:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      # ----------------------------------------
+      # Checkout
+      # ----------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
-      # -------------------------
-      # Trivy 镜像扫描
-      # -------------------------
-      - name: Trivy Scan
+      # ----------------------------------------
+      # Prepare directory
+      # ----------------------------------------
+      - name: Create report directory
+        run: |
+          mkdir -p security-reports
+
+      # ----------------------------------------
+      # Trivy Scan
+      # ----------------------------------------
+      - name: Trivy vulnerability scan
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: bugseeker/inkos:latest
+          image-ref: ${{ env.IMAGE_NAME }}:latest
+          format: template
+          template: '@/contrib/sarif.tpl'
+          output: security-reports/trivy-report.md
           severity: HIGH,CRITICAL
           ignore-unfixed: true
-          format: table
 
-      # -------------------------
-      # SBOM
-      # -------------------------
+      # ----------------------------------------
+      # Generate SBOM
+      # ----------------------------------------
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
-          image: bugseeker/inkos:latest
+          image: ${{ env.IMAGE_NAME }}:latest
+          format: spdx-json
+          output-file: security-reports/sbom.spdx.json
 
-      - name: Upload Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: inkos-security-report
-          path: ./sbom.json
+      # ----------------------------------------
+      # Generate Status
+      # ----------------------------------------
+      - name: Generate security status
+        run: |
+          cat > security-reports/security-status.md <<EOF
+          # Security Status
+
+          Image: \`${IMAGE_NAME}:latest\`
+
+          Scan Date: $(date +"%Y-%m-%d")
+
+          Checks:
+          ✅ Trivy vulnerability scan
+          ✅ SBOM generated
+
+          Scanner: Trivy
+          SBOM: SPDX JSON
+          EOF
+
+      # ----------------------------------------
+      # Commit Reports
+      # ----------------------------------------
+      - name: Commit security reports
+        run: |
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add security-reports
+          git commit -m "Update security reports" || exit 0
+          git push
