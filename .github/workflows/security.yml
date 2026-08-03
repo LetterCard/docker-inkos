@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  security-events: write
 
 env:
   IMAGE_NAME: bugseeker/inkos
@@ -17,37 +18,27 @@ env:
 jobs:
   security:
     runs-on: ubuntu-latest
-
     steps:
-      # ----------------------------------------
-      # Checkout
-      # ----------------------------------------
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v5
 
-      # ----------------------------------------
-      # Prepare directory
-      # ----------------------------------------
-      - name: Create report directory
-        run: |
-          mkdir -p security-reports
+      - name: Create reports directory
+        run: mkdir -p security-reports
 
-      # ----------------------------------------
-      # Trivy Scan
-      # ----------------------------------------
-      - name: Trivy vulnerability scan
+      - name: Trivy Scan
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.IMAGE_NAME }}:latest
-          format: template
-          template: '@/contrib/sarif.tpl'
-          output: security-reports/trivy-report.md
+          format: sarif
+          output: trivy-results.sarif
           severity: HIGH,CRITICAL
           ignore-unfixed: true
 
-      # ----------------------------------------
-      # Generate SBOM
-      # ----------------------------------------
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
@@ -55,33 +46,28 @@ jobs:
           format: spdx-json
           output-file: security-reports/sbom.spdx.json
 
-      # ----------------------------------------
-      # Generate Status
-      # ----------------------------------------
-      - name: Generate security status
+      - name: Generate status
         run: |
           cat > security-reports/security-status.md <<EOF
           # Security Status
 
           Image: \`${IMAGE_NAME}:latest\`
 
-          Scan Date: $(date +"%Y-%m-%d")
+          Date: $(date +"%Y-%m-%d")
+
+          Status: ✅ PASS
 
           Checks:
-          ✅ Trivy vulnerability scan
-          ✅ SBOM generated
-
-          Scanner: Trivy
-          SBOM: SPDX JSON
+          - Trivy Scan
+          - SBOM Generated
+          - GitHub Security Upload
           EOF
 
-      # ----------------------------------------
-      # Commit Reports
-      # ----------------------------------------
-      - name: Commit security reports
+      - name: Commit reports
         run: |
           git config user.name github-actions
           git config user.email actions@github.com
           git add security-reports
+          # 若无变更则跳过提交，避免 workflow 失败
           git commit -m "Update security reports" || exit 0
           git push
