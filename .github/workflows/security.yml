@@ -18,9 +18,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ==========================
-      # Trivy漏洞扫描
-      # ==========================
+      # -------------------------
+      # Trivy 镜像扫描
+      # -------------------------
       - name: Trivy Scan
         uses: aquasecurity/trivy-action@master
         with:
@@ -29,18 +29,15 @@ jobs:
           ignore-unfixed: true
           format: table
 
-      # ==========================
-      # SBOM生成
-      # ==========================
+      # -------------------------
+      # SBOM
+      # -------------------------
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
           image: bugseeker/inkos:latest
 
-      # ==========================
-      # 保存报告
-      # ==========================
-      - name: Upload Security Report
+      - name: Upload Report
         uses: actions/upload-artifact@v4
         with:
           name: inkos-security-report
