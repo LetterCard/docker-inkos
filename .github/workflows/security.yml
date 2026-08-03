@@ -22,23 +22,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Create reports directory
-        run: mkdir -p security-reports
+      - name: Prepare reports directory
+        run: |
+          mkdir -p security-reports
 
-      - name: Trivy Scan
+      # -------------------------
+      # Trivy Markdown Report
+      # -------------------------
+      - name: Trivy Scan Report
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:latest
+          format: template
+          template: '@/contrib/html.tpl'
+          output: security-reports/trivy-report.md
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
+      # -------------------------
+      # Trivy SARIF
+      # -------------------------
+      - name: Trivy SARIF
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.IMAGE_NAME }}:latest
           format: sarif
           output: trivy-results.sarif
           severity: HIGH,CRITICAL
-          ignore-unfixed: true
 
-      - name: Upload SARIF
+      - name: Upload GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
 
+      # -------------------------
+      # SBOM
+      # -------------------------
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
@@ -46,28 +65,42 @@ jobs:
           format: spdx-json
           output-file: security-reports/sbom.spdx.json
 
-      - name: Generate status
+      # -------------------------
+      # Status
+      # -------------------------
+      - name: Generate security status
+        shell: bash
         run: |
           cat > security-reports/security-status.md <<EOF
           # Security Status
 
-          Image: \`${IMAGE_NAME}:latest\`
+          Image:
+          \`${IMAGE_NAME}:latest\`
 
-          Date: $(date +"%Y-%m-%d")
+          Scan Date:
+          $(date +"%Y-%m-%d")
 
-          Status: ✅ PASS
+          Status:
+          ✅ PASS
 
           Checks:
-          - Trivy Scan
-          - SBOM Generated
-          - GitHub Security Upload
+          - ✅ Trivy vulnerability scan
+          - ✅ GitHub Security upload
+          - ✅ SBOM generated
           EOF
 
-      - name: Commit reports
+      # -------------------------
+      # Commit Reports
+      # -------------------------
+      - name: Commit security reports
+        shell: bash
         run: |
           git config user.name github-actions
           git config user.email actions@github.com
+
           git add security-reports
-          # 若无变更则跳过提交，避免 workflow 失败
-          git commit -m "Update security reports" || exit 0
+
+          git commit -m \
+            "Update security reports" || exit 0
+
           git push
