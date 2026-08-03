@@ -1,0 +1,21 @@
+# Version Control
+.git
+.github
+
+# Dependencies
+node_modules
+
+# Logs
+npm-debug.log
+pnpm-debug.log
+
+# Environment Variables
+.env
+.env.*
+
+# Documentation
+*.md
+
+# Docker
+Dockerfile
+docker-compose.yml
