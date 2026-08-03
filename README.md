@@ -351,32 +351,25 @@ mkdir -p /vol1/docker/inkos/{config,workspace,logs}
 
 ```yaml
 services:
-
   inkos:
-
     image: bugseeker/inkos:latest
-
     container_name: inkos
-
     restart: unless-stopped
-
-
+    network_mode: bridge
     ports:
-
       - "4567:4567"
-
-
     volumes:
-
+      # InkOS 全局配置
+      # API Key / 模型配置
       - /vol1/docker/inkos/config:/root/.inkos
 
+      # 创作项目目录
+      # 小说 / 剧本 / 世界观数据
       - /vol1/docker/inkos/workspace:/workspace
 
+      # 日志
       - /vol1/docker/inkos/logs:/logs
-
-
     environment:
-
       TZ: Asia/Shanghai
 ```
 
