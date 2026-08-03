@@ -17,5 +17,4 @@
 - ✅ SBOM Generation
 - ✅ Docker Image Check
 
-Maintainer:
-https://github.com/LetterCard
+Maintainer: https://github.com/LetterCard
