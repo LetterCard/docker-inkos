@@ -6,42 +6,59 @@ on:
       - Build InkOS Docker
     types:
       - completed
+
   workflow_dispatch:
+
 
 permissions:
   contents: write
   security-events: write
+  packages: read
+
 
 env:
   IMAGE_NAME: bugseeker/inkos
 
+
 jobs:
+
   security:
+
+    if:
+      github.event.workflow_run.conclusion == 'success'
+
     runs-on: ubuntu-latest
+
+
     steps:
+
       - name: Checkout
         uses: actions/checkout@v5
+
 
       - name: Prepare reports directory
         run: |
           mkdir -p security-reports
 
+
       # -------------------------
       # Trivy Markdown Report
       # -------------------------
+
       - name: Trivy Scan Report
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.IMAGE_NAME }}:latest
-          format: template
-          template: '@/contrib/html.tpl'
+          format: table
           output: security-reports/trivy-report.md
           severity: HIGH,CRITICAL
           ignore-unfixed: true
 
+
       # -------------------------
       # Trivy SARIF
       # -------------------------
+
       - name: Trivy SARIF
         uses: aquasecurity/trivy-action@master
         with:
@@ -49,15 +66,19 @@ jobs:
           format: sarif
           output: trivy-results.sarif
           severity: HIGH,CRITICAL
+          ignore-unfixed: true
+
 
       - name: Upload GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
 
+
       # -------------------------
       # SBOM
       # -------------------------
+
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
@@ -65,33 +86,41 @@ jobs:
           format: spdx-json
           output-file: security-reports/sbom.spdx.json
 
+
       # -------------------------
-      # Status
+      # Security Status
       # -------------------------
+
       - name: Generate security status
         shell: bash
         run: |
           cat > security-reports/security-status.md <<EOF
-          # Security Status
+# Security Status
 
-          Image:
-          \`${IMAGE_NAME}:latest\`
+Image:
 
-          Scan Date:
-          $(date +"%Y-%m-%d")
+\`${IMAGE_NAME}:latest\`
 
-          Status:
-          ✅ PASS
+Scan Date:
 
-          Checks:
-          - ✅ Trivy vulnerability scan
-          - ✅ GitHub Security upload
-          - ✅ SBOM generated
-          EOF
+$(date +"%Y-%m-%d")
+
+Status:
+
+✅ PASS
+
+Checks:
+
+- ✅ Trivy vulnerability scan
+- ✅ GitHub Security upload
+- ✅ SBOM generated
+EOF
+
 
       # -------------------------
       # Commit Reports
       # -------------------------
+
       - name: Commit security reports
         shell: bash
         run: |
@@ -100,7 +129,6 @@ jobs:
 
           git add security-reports
 
-          git commit -m \
-            "Update security reports" || exit 0
+          git commit -m "Update security reports" || exit 0
 
           git push
