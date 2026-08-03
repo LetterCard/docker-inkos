@@ -38,7 +38,7 @@ jobs:
 
 
       # -------------------------
-      # Trivy Vulnerability Report
+      # Trivy Vulnerability Scan
       # -------------------------
 
       - name: Trivy Scan Report
@@ -53,7 +53,7 @@ jobs:
 
 
       # -------------------------
-      # Trivy SARIF Report
+      # Trivy SARIF
       # -------------------------
 
       - name: Trivy SARIF
@@ -95,39 +95,29 @@ jobs:
       - name: Generate Security Status
         shell: bash
         run: |
-          cat > security-reports/security-status.md <<'EOF'
-# Security Status
-
-Image:
-
-`${IMAGE_NAME}:latest`
-
-Scan Date:
-
-SCAN_DATE_PLACEHOLDER
-
-Status:
-
-✅ Completed
-
-Checks:
-
-- ✅ Trivy vulnerability scan
-- ✅ GitHub Security SARIF upload
-- ✅ SBOM generated
-
-Reports:
-
-- trivy-report.md
-- sbom.spdx.json
-
-EOF
-
-          sed -i "s/SCAN_DATE_PLACEHOLDER/$(date +"%Y-%m-%d")/" security-reports/security-status.md
+          echo "# Security Status" > security-reports/security-status.md
+          echo "" >> security-reports/security-status.md
+          echo "Image:" >> security-reports/security-status.md
+          echo "" >> security-reports/security-status.md
+          echo "\`${IMAGE_NAME}:latest\`" >> security-reports/security-status.md
+          echo "" >> security-reports/security-status.md
+          echo "Scan Date:" >> security-reports/security-status.md
+          echo "" >> security-reports/security-status.md
+          date +"%Y-%m-%d" >> security-reports/security-status.md
+          echo "" >> security-reports/security-status.md
+          echo "Status:" >> security-reports/security-status.md
+          echo "" >> security-reports/security-status.md
+          echo "✅ Completed" >> security-reports/security-status.md
+          echo "" >> security-reports/security-status.md
+          echo "Checks:" >> security-reports/security-status.md
+          echo "" >> security-reports/security-status.md
+          echo "- ✅ Trivy vulnerability scan" >> security-reports/security-status.md
+          echo "- ✅ GitHub Security SARIF upload" >> security-reports/security-status.md
+          echo "- ✅ SBOM generated" >> security-reports/security-status.md
 
 
       # -------------------------
-      # Verify Reports
+      # Check Reports
       # -------------------------
 
       - name: Check Reports
