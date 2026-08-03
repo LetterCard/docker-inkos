@@ -1,11 +1,9 @@
 name: Build InkOS Docker
 
 on:
-  # 每天凌晨检查一次上游更新
   schedule:
+    # 每天凌晨3点检查上游
     - cron: "0 3 * * *"
-
-  # 手动触发
   workflow_dispatch:
 
 permissions:
@@ -13,54 +11,44 @@ permissions:
 
 env:
   IMAGE_NAME: bugseeker/inkos
+  UPSTREAM_REPO: Narcooo/inkos
 
 jobs:
   # =====================================================
-  # 检查 InkOS 上游版本
+  # 检查上游版本
   # =====================================================
   check-version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
-      changed: ${{ steps.check.outputs.changed }}
+      changed: ${{ steps.compare.outputs.changed }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Clone InkOS upstream
-        run: |
-          git clone \
-            --depth=100 \
-            https://github.com/Narcooo/inkos.git upstream
-
-      - name: Detect version
+      - name: Get InkOS version
         id: version
         run: |
+          git clone --depth=100 \
+            https://github.com/${UPSTREAM_REPO}.git upstream
           cd upstream
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || true)
 
-          # 优先读取 Git Tag
-          VERSION=$(git describe \
-            --tags \
-            --abbrev=0 \
-            2>/dev/null || true)
-
-          # fallback package.json
           if [ -z "$VERSION" ]; then
-            VERSION=$(jq -r .version package.json)
+            VERSION=$(node -p "require('./package.json').version")
             VERSION="v${VERSION}"
           fi
 
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Compare version
-        id: check
+        id: compare
         run: |
           OLD=$(cat VERSION)
           NEW=${{ steps.version.outputs.version }}
-
-          echo "Current: $OLD"
-          echo "Latest: $NEW"
+          echo "Current=$OLD"
+          echo "Latest=$NEW"
 
           if [ "$OLD" != "$NEW" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
@@ -69,7 +57,7 @@ jobs:
           fi
 
       - name: Update VERSION
-        if: steps.check.outputs.changed == 'true'
+        if: steps.compare.outputs.changed == 'true'
         run: |
           echo "${{ steps.version.outputs.version }}" > VERSION
           git config user.name github-actions
@@ -79,7 +67,7 @@ jobs:
           git push
 
   # =====================================================
-  # Docker Build & Push
+  # Docker Build
   # =====================================================
   docker-build:
     needs: check-version
@@ -102,11 +90,11 @@ jobs:
       - name: Setup Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Docker Metadata
+      - name: Metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: bugseeker/inkos
+          images: ${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest
             type=raw,value=${{ needs.check-version.outputs.version }}
