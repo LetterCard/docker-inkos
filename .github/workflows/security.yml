@@ -19,6 +19,7 @@ env:
 
 jobs:
   security:
+
     if: github.event.workflow_run.conclusion == 'success'
 
     runs-on: ubuntu-latest
@@ -36,7 +37,9 @@ jobs:
           mkdir -p security-reports
 
 
+      # -------------------------
       # Trivy Vulnerability Report
+      # -------------------------
 
       - name: Trivy Scan Report
         continue-on-error: true
@@ -49,7 +52,9 @@ jobs:
           ignore-unfixed: true
 
 
-      # Trivy SARIF
+      # -------------------------
+      # Trivy SARIF Report
+      # -------------------------
 
       - name: Trivy SARIF
         continue-on-error: true
@@ -70,7 +75,9 @@ jobs:
           sarif_file: trivy-results.sarif
 
 
+      # -------------------------
       # SBOM
+      # -------------------------
 
       - name: Generate SBOM
         continue-on-error: true
@@ -81,21 +88,23 @@ jobs:
           output-file: security-reports/sbom.spdx.json
 
 
+      # -------------------------
       # Security Status
+      # -------------------------
 
       - name: Generate Security Status
         shell: bash
         run: |
-          cat > security-reports/security-status.md <<EOF
+          cat > security-reports/security-status.md <<'EOF'
 # Security Status
 
 Image:
 
-\`${IMAGE_NAME}:latest\`
+`${IMAGE_NAME}:latest`
 
 Scan Date:
 
-$(date +"%Y-%m-%d")
+SCAN_DATE_PLACEHOLDER
 
 Status:
 
@@ -114,13 +123,21 @@ Reports:
 
 EOF
 
+          sed -i "s/SCAN_DATE_PLACEHOLDER/$(date +"%Y-%m-%d")/" security-reports/security-status.md
+
+
+      # -------------------------
+      # Verify Reports
+      # -------------------------
 
       - name: Check Reports
         run: |
           ls -lah security-reports
 
 
+      # -------------------------
       # Commit Reports
+      # -------------------------
 
       - name: Commit Security Reports
         shell: bash
