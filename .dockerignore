@@ -13,9 +13,14 @@ pnpm-debug.log
 .env
 .env.*
 
-# Documentation
-*.md
+# Security
+security-reports
 
 # Docker
 Dockerfile
 docker-compose.yml
+
+# Documentation
+README.md
+CHANGELOG.md
+SECURITY.md
