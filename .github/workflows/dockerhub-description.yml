@@ -1,22 +1,30 @@
-name: Update Docker Hub README
+name: Create Release
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - README.md
+  workflow_run:
+    workflows:
+      - Build InkOS Docker
+    types:
+      - completed
+
+permissions:
+  contents: write
 
 jobs:
-  dockerhub:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Sync Docker Hub description
-        uses: peter-evans/dockerhub-description@v4
+      - name: Read version
+        id: version
+        run: |
+          echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-          repository: bugseeker/inkos
+          tag_name: ${{ steps.version.outputs.version }}
+          name: InkOS ${{ steps.version.outputs.version }}
+          generate_release_notes: true
