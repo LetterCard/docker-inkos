@@ -2,6 +2,7 @@ name: Build InkOS Docker
 
 on:
   schedule:
+    # 每天 UTC 03:00
     - cron: "0 3 * * *"
   workflow_dispatch:
 
@@ -10,12 +11,13 @@ permissions:
 
 env:
   IMAGE_NAME: bugseeker/inkos
-  UPSTREAM_REPO: Narcooo/inkos
 
 jobs:
+  # ==========================================================
+  # Check latest InkOS version
+  # ==========================================================
   check-version:
     runs-on: ubuntu-latest
-
     outputs:
       version: ${{ steps.version.outputs.version }}
       changed: ${{ steps.compare.outputs.changed }}
@@ -24,39 +26,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Get upstream version
+      - name: Get latest InkOS version
         id: version
         shell: bash
         run: |
-          git clone \
-            --depth=100 \
-            https://github.com/${UPSTREAM_REPO}.git \
-            upstream
-
-          cd upstream
-
-          VERSION=$(git describe \
-            --tags \
-            --abbrev=0 \
-            2>/dev/null || true)
-
-          if [ -z "$VERSION" ]; then
-            VERSION=$(node -p \
-              "require('./package.json').version")
-            VERSION="v${VERSION}"
-          fi
-
+          VERSION=$(npm view @actalk/inkos version)
+          echo "Latest InkOS version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Compare version
         id: compare
         shell: bash
         run: |
-          CURRENT=$(cat VERSION)
+          CURRENT=$(cat VERSION 2>/dev/null || echo "0.0.0")
           LATEST=${{ steps.version.outputs.version }}
 
           echo "Current: $CURRENT"
-          echo "Latest:  $LATEST"
+          echo "Latest : $LATEST"
 
           if [ "$CURRENT" != "$LATEST" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
@@ -74,13 +60,13 @@ jobs:
           echo "$VERSION" > VERSION
 
           if [ -f CHANGELOG.md ]; then
-            sed -i \
-              "0,/^# v.*/s//\# $VERSION/" \
-              CHANGELOG.md
+            cat > /tmp/header <<EOF
+          # InkOS $VERSION
+          Release Date: $DATE
+          EOF
 
-            sed -i \
-              "0,/^202[0-9]-[0-9][0-9]-[0-9][0-9]/s//${DATE}/" \
-              CHANGELOG.md
+            cat /tmp/header CHANGELOG.md > CHANGELOG.tmp
+            mv CHANGELOG.tmp CHANGELOG.md
           fi
 
           git config user.name github-actions
@@ -88,36 +74,23 @@ jobs:
 
           git add VERSION CHANGELOG.md
 
-          git commit -m \
-            "Update InkOS version $VERSION"
+          git commit \
+            -m "Update InkOS version $VERSION"
 
           git push
 
-
+  # ==========================================================
+  # Docker Build
+  # ==========================================================
   docker-build:
     needs:
       - check-version
-
     if: needs.check-version.outputs.changed == 'true'
-
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Docker repository
         uses: actions/checkout@v5
-
-      - name: Checkout InkOS source
-        uses: actions/checkout@v5
-        with:
-          repository: Narcooo/inkos
-          ref: ${{ needs.check-version.outputs.version }}
-          path: upstream
-
-      - name: Prepare build context
-        shell: bash
-        run: |
-          rm -rf ./src
-          cp -a upstream/. .
 
       - name: Login Docker Hub
         uses: docker/login-action@v3
@@ -131,7 +104,7 @@ jobs:
       - name: Setup Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Docker metadata
+      - name: Docker Metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -140,14 +113,17 @@ jobs:
             type=raw,value=latest
             type=raw,value=${{ needs.check-version.outputs.version }}
 
-      - name: Build and Push
+      - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            INKOS_VERSION=${{ needs.check-version.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
             org.opencontainers.image.version=${{ needs.check-version.outputs.version }}
+            org.opencontainers.image.source=https://github.com/Narcooo/inkos
           cache-from: type=gha
           cache-to: type=gha,mode=max
