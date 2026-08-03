@@ -6,16 +6,21 @@
 InkOS 是一个面向小说与故事创作的 AI Agent 系统。
 
 
-帮助创作者完成：
+通过 AI Agent 工作流帮助创作者完成：
 
 - 📖 小说创作
 - 🎬 剧本开发
 - 🌍 世界观构建
 - 🎭 角色设计
-- 🔄 内容审阅与修改
+- 🔍 内容审核
+- ✏️ 自动修改优化
 
 
-通过 Docker 快速部署自己的 AI 创作工作空间。
+支持写作、审阅、修改等完整创作流程，
+并提供 Web Studio 工作台。
+
+
+通过 Docker 快速部署自己的 AI 创作环境。
 
 
 ---
@@ -26,12 +31,10 @@ InkOS 是一个面向小说与故事创作的 AI Agent 系统。
 官方 InkOS 更偏向开发者安装方式。
 
 
-本项目将 InkOS 封装为长期运行的 Docker 服务。
+本项目将 InkOS 封装为长期运行的 Docker 服务，
+方便部署到：
 
-
-适合：
-
-- NAS 用户
+- NAS
 - 家庭服务器
 - 云服务器
 - Linux 主机
@@ -39,12 +42,18 @@ InkOS 是一个面向小说与故事创作的 AI Agent 系统。
 
 提供：
 
-✅ 一键部署  
-✅ 自动跟随上游版本  
-✅ 固定版本镜像  
-✅ amd64 / arm64 支持  
-✅ 数据持久化  
-✅ 自动安全检测  
+✅ 一键部署
+
+✅ 自动跟随上游版本
+
+✅ 固定版本镜像
+
+✅ amd64 / arm64 支持
+
+✅ 数据持久化
+
+✅ 自动安全检测
+
 
 
 ---
@@ -54,19 +63,36 @@ InkOS 是一个面向小说与故事创作的 AI Agent 系统。
 
 ## 上游项目
 
+
 InkOS：
 
 https://github.com/Narcooo/inkos
 
 
+---
 
 ## Docker 化方案
 
-https://github.com/LetterCard
+
+本项目：
+
+https://github.com/LetterCard/inkos-docker
+
+
+负责：
+
+- Docker 镜像构建
+- CI/CD 自动化
+- 版本同步
+- 安全检测
+- NAS 部署优化
 
 
 
-## 镜像维护
+---
+
+# 🐳 镜像维护
+
 
 Docker Hub：
 
@@ -80,13 +106,9 @@ bugseeker/inkos
 **bugseeker**
 
 
-负责：
+维护仓库：
 
-- Docker 构建
-- CI/CD 自动化
-- 镜像发布
-- 安全检测
-- NAS 部署优化
+https://github.com/LetterCard/inkos-docker
 
 
 
@@ -101,7 +123,7 @@ bugseeker/inkos
 自动检测 InkOS 更新。
 
 
-版本优先级：
+版本来源：
 
 ```
 GitHub Release Tag
@@ -116,7 +138,8 @@ Docker Image
 ```
 
 
-无需手动重新构建。
+镜像版本与源码版本保持一致。
+
 
 
 ---
@@ -130,6 +153,10 @@ InkOS 更新
 ↓
 
 GitHub Actions
+
+↓
+
+指定版本源码构建
 
 ↓
 
@@ -147,6 +174,7 @@ SBOM生成
 
 Docker Hub发布
 ```
+
 
 
 ---
@@ -175,7 +203,7 @@ linux/arm64
 # 🏷 镜像版本
 
 
-最新版本：
+最新版：
 
 ```
 bugseeker/inkos:latest
@@ -192,7 +220,7 @@ bugseeker/inkos:v版本号
 例如：
 
 ```
-bugseeker/inkos:v1.2.0
+bugseeker/inkos:v1.7.1
 ```
 
 
@@ -209,10 +237,12 @@ bugseeker/inkos:v1.2.0
 # 🔐 安全体系
 
 
-镜像采用自动化安全检测流程。
+本镜像采用自动化安全流程。
+
 
 
 ## 基础镜像
+
 
 ```
 node:22-bookworm-slim
@@ -227,32 +257,51 @@ node:22-bookworm-slim
 
 
 
-## 自动检测
+---
+
+## 自动安全检测
 
 
 每次发布执行：
 
-- Trivy 漏洞扫描
-- Node.js 依赖检查
-- SBOM 软件清单生成
+
+✅ Trivy 漏洞扫描
+
+✅ GitHub Security 检测
+
+✅ SBOM 软件清单生成
 
 
-重点关注：
+
+检测：
+
+- 系统依赖
+- Node.js 依赖
+- 软件组件风险
+
+
+
+---
+
+## 安全报告
+
+
+最新安全报告：
+
+https://github.com/LetterCard/inkos-docker/tree/main/security-reports
+
+
+
+包含：
 
 ```
-HIGH
+security-status.md
 
-CRITICAL
+trivy-report.md
+
+sbom.spdx.json
 ```
 
-
-详细安全说明：
-
-见：
-
-```
-SECURITY.md
-```
 
 
 ---
@@ -266,11 +315,9 @@ Docker 镜像只负责运行环境。
 用户数据独立保存。
 
 
-目录：
-
-|宿主机|容器|用途|
+|宿主机目录|容器目录|用途|
 |-|-|-|
-|config|/root/.inkos|InkOS配置|
+|config|/root/.inkos|配置文件|
 |workspace|/workspace|项目数据|
 |logs|/logs|运行日志|
 
@@ -279,7 +326,7 @@ Docker 镜像只负责运行环境。
 
 - API 配置
 - 小说项目
-- 创作数据
+- 创作记录
 
 
 
@@ -296,6 +343,7 @@ mkdir -p /vol1/docker/inkos/{config,workspace,logs}
 ```
 
 
+
 ---
 
 ## docker-compose.yml
@@ -305,21 +353,33 @@ mkdir -p /vol1/docker/inkos/{config,workspace,logs}
 services:
 
   inkos:
+
     image: bugseeker/inkos:latest
+
     container_name: inkos
+
     restart: unless-stopped
 
+
     ports:
+
       - "4567:4567"
 
+
     volumes:
+
       - /vol1/docker/inkos/config:/root/.inkos
+
       - /vol1/docker/inkos/workspace:/workspace
+
       - /vol1/docker/inkos/logs:/logs
 
+
     environment:
+
       TZ: Asia/Shanghai
 ```
+
 
 
 启动：
@@ -327,6 +387,7 @@ services:
 ```bash
 docker compose up -d
 ```
+
 
 
 访问：
@@ -353,7 +414,7 @@ http://NAS-IP:4567
 
 ---
 
-## InkOS 全局配置
+## InkOS 配置
 
 
 位置：
@@ -373,14 +434,13 @@ INKOS_LLM_BASE_URL=https://api.openai.com/v1
 INKOS_LLM_API_KEY=your_api_key
 
 INKOS_LLM_MODEL=gpt-4.1
-
-INKOS_DEFAULT_LANGUAGE=zh
 ```
+
 
 
 ---
 
-## 项目级配置
+## 项目配置
 
 
 位置：
@@ -392,44 +452,30 @@ workspace/项目名称/.env
 
 用于：
 
-- 独立模型
+- 单项目模型
 - 独立 API
-- 单项目参数
+- 创作参数
 
-
-
-优先级：
-
-```
-项目 .env
-
-↓
-
-全局 .env
-
-↓
-
-Docker environment
-```
 
 
 ---
 
-# 🔄 更新
+# 🔄 更新镜像
 
 
-拉取最新镜像：
+拉取：
 
 ```bash
 docker compose pull
 ```
 
 
-重新启动：
+重启：
 
 ```bash
 docker compose up -d
 ```
+
 
 
 ---
@@ -455,14 +501,17 @@ bugseeker/inkos
 # 🙏 致谢
 
 
-InkOS：
+感谢：
+
+InkOS 作者：
 
 https://github.com/Narcooo/inkos
 
 
-Docker 方案：
 
-https://github.com/LetterCard
+Docker 维护：
+
+https://github.com/LetterCard/inkos-docker
 
 
 
