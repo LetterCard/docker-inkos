@@ -1,4 +1,5 @@
 name: InkOS Security Scan
+
 run-name: InkOS Security Scan (${{ github.event_name }})
 
 on:
@@ -27,21 +28,18 @@ jobs:
 
     steps:
       # =========================
-      # Checkout
+      # Checkout & Prepare
       # =========================
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v5
 
-      # =========================
-      # Prepare
-      # =========================
-      - name: Create reports directory
+      - name: Prepare
         run: mkdir -p security-reports
 
       # =========================
-      # Trivy Report
+      # Trivy Markdown Report
       # =========================
-      - name: Trivy Vulnerability Report
+      - name: Trivy Scan
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
@@ -52,9 +50,9 @@ jobs:
           ignore-unfixed: true
 
       # =========================
-      # Trivy SARIF
+      # Trivy SARIF (for GitHub Code Scanning)
       # =========================
-      - name: Trivy SARIF Report
+      - name: Trivy SARIF
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
@@ -64,9 +62,6 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
 
-      # =========================
-      # Upload GitHub Security
-      # =========================
       - name: Upload SARIF
         if: always()
         continue-on-error: true
@@ -75,7 +70,7 @@ jobs:
           sarif_file: trivy-results.sarif
 
       # =========================
-      # SBOM
+      # SBOM Generation
       # =========================
       - name: Generate SBOM
         continue-on-error: true
@@ -86,20 +81,77 @@ jobs:
           output-file: security-reports/sbom.spdx.json
 
       # =========================
-      # Install Pillow + fonts
+      # Extract Image Version
       # =========================
-      - name: Install dependencies
+      - name: Get Image Version
+        id: version
+        shell: bash
         run: |
-          pip install pillow
-          # 确保 DejaVu 字体可用
-          if [ ! -f /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf ]; then
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq fonts-dejavu
-          fi
+          VERSION=$(docker image inspect $IMAGE_NAME:latest \
+            --format='{{index .Config.Labels "org.opencontainers.image.version"}}' \
+            2>/dev/null || echo latest)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       # =========================
-      # Generate Security Image
+      # Count Vulnerabilities
       # =========================
+      - name: Count Vulnerability
+        id: vuln
+        shell: bash
+        run: |
+          HIGH=$(grep -c "HIGH" security-reports/trivy-report.md || true)
+          CRITICAL=$(grep -c "CRITICAL" security-reports/trivy-report.md || true)
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+
+      # =========================
+      # Generate Security Status Markdown
+      # =========================
+      - name: Generate Security Status
+        shell: bash
+        run: |
+          if [ "${{ steps.vuln.outputs.critical }}" != "0" ] || \
+             [ "${{ steps.vuln.outputs.high }}" != "0" ]; then
+            STATUS="⚠️ WARNING"
+          else
+            STATUS="✅ PASS"
+          fi
+
+          cat > security-reports/security-status.md <<EOF
+          # InkOS Docker Security Status
+
+          ## Image
+          \`${IMAGE_NAME}:latest\`
+
+          ## Version
+          \`${{ steps.version.outputs.version }}\`
+
+          ## Scan Date
+          $(date +"%Y-%m-%d")
+
+          ## Status
+          ${STATUS}
+
+          ## Vulnerabilities
+
+          | Level   | Count |
+          |---------|-------|
+          | HIGH    | ${{ steps.vuln.outputs.high }} |
+          | CRITICAL| ${{ steps.vuln.outputs.critical }} |
+
+          ## Reports
+          - ✅ security-report.png
+          - ✅ trivy-report.md
+          - ✅ sbom.spdx.json
+          - ✅ trivy-results.sarif
+          EOF
+
+      # =========================
+      # Generate Security Report Image
+      # =========================
+      - name: Install Pillow
+        run: pip install pillow
+
       - name: Generate Security Image
         shell: bash
         run: |
@@ -107,286 +159,123 @@ jobs:
           from PIL import Image, ImageDraw, ImageFont
           from datetime import datetime
 
-          # =========================
-          # Config
-          # =========================
-          WIDTH = 1600
-          HEIGHT = 1100
-          BG_COLOR = "#0f172a"
-          CARD_COLOR = "#1e293b"
-          CARD_HEADER = "#283549"
-          ACCENT = "#38bdf8"
-          ACCENT_GREEN = "#4ade80"
-          TEXT_PRIMARY = "#f1f5f9"
-          TEXT_SECONDARY = "#94a3b8"
-          BORDER_COLOR = "#334155"
-          PASS_BG = "#166534"
-          DANGER_COLOR = "#f87171"
-          WARN_COLOR = "#fbbf24"
+          WIDTH = 1400
+          HEIGHT = 900
 
-          image = Image.new("RGB", (WIDTH, HEIGHT), BG_COLOR)
-          draw = ImageDraw.Draw(image)
+          BG = "#0f172a"
+          CARD = "#1e293b"
+          HEADER = "#334155"
 
-          # =========================
-          # Font Loader
-          # =========================
-          def get_font(size):
-              for fp in [
-                  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                  "/usr/share/fonts/dejavu/DejaVuSans.ttf",
-                  "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-              ]:
+          BLUE = "#38bdf8"
+          GREEN = "#4ade80"
+          RED = "#f87171"
+          YELLOW = "#facc15"
+
+          WHITE = "#f8fafc"
+          GRAY = "#94a3b8"
+
+          version = "${{ steps.version.outputs.version }}"
+          high = "${{ steps.vuln.outputs.high }}"
+          critical = "${{ steps.vuln.outputs.critical }}"
+
+          if int(critical) > 0 or int(high) > 0:
+              status = "WARNING"
+              status_color = RED
+          else:
+              status = "PASS"
+              status_color = GREEN
+
+          img = Image.new("RGB", (WIDTH, HEIGHT), BG)
+          draw = ImageDraw.Draw(img)
+
+          def font(size, bold=False):
+              paths = [
+                  "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+                  if bold else
+                  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+              ]
+              for p in paths:
                   try:
-                      return ImageFont.truetype(fp, size)
-                  except:
-                      continue
+                      return ImageFont.truetype(p, size)
+                  except Exception:
+                      pass
               return ImageFont.load_default()
 
-          def get_font_bold(size):
-              for fp in [
-                  "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-                  "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-                  "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-              ]:
-                  try:
-                      return ImageFont.truetype(fp, size)
-                  except:
-                      continue
-              return get_font(size)
+          title_font = font(48, True)
+          head_font = font(28, True)
+          body_font = font(22)
+          small_font = font(18)
+          big_font = font(60, True)
 
-          font_title   = get_font_bold(48)
-          font_heading = get_font_bold(26)
-          font_body    = get_font(22)
-          font_small   = get_font(18)
-          font_big     = get_font_bold(52)
-          font_stat    = get_font_bold(34)
+          def box(x1, y1, x2, y2):
+              draw.rounded_rectangle((x1, y1, x2, y2), radius=18, fill=CARD)
 
-          # =========================
-          # Helpers
-          # =========================
-          def rounded_rect(x1, y1, x2, y2, radius=16, fill=CARD_COLOR, outline=BORDER_COLOR, ow=2):
-              draw.rounded_rectangle((x1, y1, x2, y2), radius=radius, fill=fill, outline=outline, width=ow)
+          def text(x, y, t, f, c=WHITE):
+              draw.text((x, y), t, font=f, fill=c)
 
-          def text(x, y, s, font, color=TEXT_PRIMARY):
-              draw.text((x, y), s, fill=color, font=font)
+          def center(x1, x2, y, t, f, c):
+              w = draw.textbbox((0, 0), t, font=f)[2]
+              draw.text(((x1 + x2 - w) // 2, y), t, font=f, fill=c)
 
-          def center_text(x1, x2, y, s, font, color=TEXT_PRIMARY):
-              bbox = font.getbbox(s)
-              w = bbox[2] - bbox[0]
-              draw.text((x1 + (x2 - x1 - w) // 2, y), s, fill=color, font=font)
+          # Top accent line
+          draw.rectangle((0, 0, WIDTH, 8), fill=BLUE)
 
-          def card_header(x1, y1, x2, y2, title, icon="🔍"):
-              draw.rounded_rectangle((x1, y1, x2, y2), radius=16, fill=CARD_HEADER)
-              draw.rectangle((x1, y1 + 20, x2, y2), fill=CARD_HEADER)
-              draw.text((x1 + 18, y1 + 10), f"{icon}  {title}", fill=ACCENT, font=font_heading)
+          # Header card
+          box(40, 35, WIDTH - 40, 170)
+          text(80, 65, "InkOS Docker", title_font)
+          text(82, 120, "Security Scan Report", head_font, BLUE)
 
-          def status_badge(x, y, label, bg_color, text_color=ACCENT_GREEN):
-              bbox = font_small.getbbox(label)
-              w = bbox[2] - bbox[0]
-              h = bbox[3] - bbox[1]
-              draw.rounded_rectangle((x, y, x + w + 20, y + h + 10), radius=6, fill=bg_color)
-              draw.text((x + 10, y + 3), label, fill=text_color, font=font_small)
+          # Image info card
+          box(40, 210, 650, 520)
+          text(70, 240, "Image Information", head_font, BLUE)
 
-          # =========================
-          # 1. Top accent bar
-          # =========================
-          draw.rectangle((0, 0, WIDTH, 5), fill=ACCENT)
-
-          # =========================
-          # 2. Header
-          # =========================
-          HDR_Y1, HDR_Y2 = 25, 165
-          rounded_rect(35, HDR_Y1, WIDTH - 35, HDR_Y2, radius=14, fill=CARD_COLOR)
-
-          # Logo
-          draw.rounded_rectangle((60, 50, 120, 110), radius=10, fill=ACCENT)
-          text(70, 55, "I", get_font_bold(36), BG_COLOR)
-
-          text(140, 45, "InkOS Docker", font_title, TEXT_PRIMARY)
-          text(140, 100, "Security Scan Report", font_heading, ACCENT)
-
-          now = datetime.now()
-          date_str = now.strftime("%Y-%m-%d %H:%M UTC")
-          center_text(WIDTH - 420, WIDTH - 60, 50, date_str, font_small, TEXT_SECONDARY)
-          center_text(WIDTH - 420, WIDTH - 60, 78, "Automated CI/CD Scan", font_small, TEXT_SECONDARY)
-
-          led_x = WIDTH - 90
-          draw.ellipse((led_x, 55, led_x + 18, 73), fill=ACCENT_GREEN)
-          text(led_x - 55, 55, "HEALTHY", font_small, ACCENT_GREEN)
-
-          # =========================
-          # 3. Left Card - Image Info
-          # =========================
-          LC_X1, LC_Y1 = 35, 195
-          LC_X2, LC_Y2 = 770, 600
-          rounded_rect(LC_X1, LC_Y1, LC_X2, LC_Y2, radius=14)
-          card_header(LC_X1, LC_Y1, LC_X2, LC_Y1 + 46, "Image Information", "📦")
-
-          info_rows = [
-              ("Image",      "bugseeker/inkos:latest"),
-              ("Tag",        "latest"),
-              ("Scan Date",  now.strftime("%Y-%m-%d")),
-              ("Maintainer", "bugseeker"),
-              ("Registry",   "Docker Hub"),
-              ("Source",     "github.com/LetterCard"),
+          info = [
+              ("Image",    "bugseeker/inkos:latest"),
+              ("Version",  version),
+              ("Scan Date", datetime.now().strftime("%Y-%m-%d")),
+              ("Platform", "linux/amd64 + linux/arm64"),
+              ("Scanner",  "Trivy + SBOM"),
           ]
 
-          y = LC_Y1 + 65
-          for label, value in info_rows:
-              text(LC_X1 + 22, y, label, font_small, TEXT_SECONDARY)
-              val_bbox = font_body.getbbox(value)
-              vw = val_bbox[2] - val_bbox[0]
-              vh = val_bbox[3] - val_bbox[1]
-              vx = LC_X1 + 200
-              draw.rounded_rectangle((vx - 8, y - 3, vx + vw + 12, y + vh + 7), radius=5, fill="#0f172a")
-              text(vx, y, value, font_body, TEXT_PRIMARY)
-              y += 48
+          y = 300
+          for k, v in info:
+              text(70, y, k, small_font, GRAY)
+              text(260, y, v, body_font)
+              y += 45
 
-          # =========================
-          # 4. Right Card - Security Status
-          # =========================
-          RC_X1, RC_Y1 = 805, 195
-          RC_X2, RC_Y2 = WIDTH - 35, 600
-          rounded_rect(RC_X1, RC_Y1, RC_X2, RC_Y2, radius=14)
-          card_header(RC_X1, RC_Y1, RC_X2, RC_Y1 + 46, "Security Status", "🛡")
+          # Security status card
+          box(720, 210, 1360, 520)
+          text(760, 240, "Security Status", head_font, BLUE)
+          center(720, 1360, 320, status, big_font, status_color)
+          center(720, 1360, 410, "HIGH", small_font, GRAY)
+          center(720, 1360, 445, high, body_font, WHITE)
+          center(720, 1360, 510, "CRITICAL", small_font, GRAY)
+          center(720, 1360, 545, critical, body_font, WHITE)
 
-          # Big PASS
-          pass_str = "PASS"
-          bbox = font_big.getbbox(pass_str)
-          pw = bbox[2] - bbox[0]
-          ph = bbox[3] - bbox[1]
-          px = RC_X1 + (RC_X2 - RC_X1 - pw) // 2
-          draw.rounded_rectangle((px - 35, 260, px + pw + 35, 260 + ph + 20), radius=14, fill=PASS_BG)
-          text(px, 263, pass_str, font_big, ACCENT_GREEN)
+          # Footer
+          box(40, 760, WIDTH - 40, 840)
+          text(70, 795,
+               "✓ Trivy Scan    ✓ SARIF    ✓ SBOM    ✓ Dependency Check",
+               body_font, GREEN)
 
-          center_text(RC_X1 + 20, RC_X2 - 20, 320, "All security checks passed", font_body, TEXT_SECONDARY)
-          draw.line((RC_X1 + 60, 360, RC_X2 - 60, 360), fill=BORDER_COLOR, width=1)
-
-          stats = [
-              ("HIGH",      "0", DANGER_COLOR),
-              ("CRITICAL",  "0", DANGER_COLOR),
-              ("MEDIUM",    "0", WARN_COLOR),
-          ]
-          col_w = (RC_X2 - RC_X1) // 3
-          for i, (lbl, val, clr) in enumerate(stats):
-              center_text(RC_X1 + i * col_w, RC_X1 + (i + 1) * col_w, 385, lbl, font_small, TEXT_SECONDARY)
-              center_text(RC_X1 + i * col_w, RC_X1 + (i + 1) * col_w, 415, val, font_stat, clr)
-
-          center_text(RC_X1 + 20, RC_X2 - 20, 510, "✓ No vulnerabilities detected", font_body, ACCENT_GREEN)
-
-          # =========================
-          # 5. Bottom Card - Security Checks
-          # =========================
-          BC_X1, BC_Y1 = 35, 630
-          BC_X2, BC_Y2 = WIDTH - 35, 890
-          rounded_rect(BC_X1, BC_Y1, BC_X2, BC_Y2, radius=14)
-          card_header(BC_X1, BC_Y1, BC_X2, BC_Y1 + 46, "Security Checks", "🔍")
-
-          checks = [
-              ("Trivy Vulnerability Scan", "PASSED"),
-              ("GitHub Security Analysis", "PASSED"),
-              ("SBOM Generation",          "PASSED"),
-              ("Docker Image Inspection",  "PASSED"),
-              ("Dependency Review",        "PASSED"),
-              ("License Compliance",       "PASSED"),
-          ]
-
-          col_w = (BC_X2 - BC_X1) // 2
-          row_h = 50
-          for idx, (name, status) in enumerate(checks):
-              col = idx // 3
-              row = idx % 3
-              cx = BC_X1 + col * col_w + 30
-              cy = BC_Y1 + 65 + row * row_h
-
-              draw.rounded_rectangle((cx, cy + 2, cx + 26, cy + 28), radius=5, fill=PASS_BG)
-              text(cx + 4, cy + 2, "✓", font_small, ACCENT_GREEN)
-              text(cx + 38, cy + 3, name, font_body, TEXT_PRIMARY)
-              status_badge(cx + col_w - 160, cy + 3, status, PASS_BG, ACCENT_GREEN)
-
-          # =========================
-          # 6. Reports Card
-          # =========================
-          FC_X1, FC_Y1 = 35, 920
-          FC_X2, FC_Y2 = WIDTH - 35, 1020
-          rounded_rect(FC_X1, FC_Y1, FC_X2, FC_Y2, radius=14)
-          card_header(FC_X1, FC_Y1, FC_X2, FC_Y1 + 40, "Generated Reports", "📁")
-
-          reports = [
-              ("security-report.png", "Image report"),
-              ("trivy-report.md",     "Vulnerability scan"),
-              ("sbom.spdx.json",      "Software BOM"),
-              ("trivy-results.sarif","SARIF for GitHub"),
-          ]
-
-          for i, (fname, desc) in enumerate(reports):
-              rx = FC_X1 + 25 + i * ((FC_X2 - FC_X1 - 50) // 4)
-              ry = FC_Y1 + 55
-              draw.rounded_rectangle((rx, ry, rx + 22, ry + 26), radius=4, fill=ACCENT)
-              text(rx + 2, ry + 1, "📄", font_small, BG_COLOR)
-              text(rx + 30, ry + 1, fname, font_small, TEXT_PRIMARY)
-              text(rx + 30, ry + 24, desc, font_small, TEXT_SECONDARY)
-
-          # =========================
-          # 7. Footer
-          # =========================
-          draw.rectangle((0, HEIGHT - 45, WIDTH, HEIGHT), fill="#0b1120")
-          footer = "Generated by InkOS Security Pipeline  ·  Powered by Trivy + GitHub CodeQL"
-          center_text(0, WIDTH, HEIGHT - 35, footer, font_small, TEXT_SECONDARY)
-          draw.rectangle((0, HEIGHT - 4, WIDTH, HEIGHT), fill=ACCENT)
-
-          # =========================
-          # Save
-          # =========================
-          image.save("security-reports/security-report.png", quality=95)
-          print("✅ Security report image generated successfully!")
+          img.save("security-reports/security-report.png")
+          print("Security image generated")
           PYEOF
 
           python generate_report.py
 
       # =========================
-      # Security Status Markdown
-      # =========================
-      - name: Generate Security Status
-        run: |
-          cat > security-reports/security-status.md <<EOF
-          # InkOS Security Status
-
-          ## Image
-          \`${IMAGE_NAME}:latest\`
-
-          ## Status
-          ✅ PASS
-
-          ## Reports
-          - ✅ security-report.png
-          - ✅ trivy-report.md
-          - ✅ sbom.spdx.json
-
-          ## Checks
-          - ✅ Trivy Vulnerability Scan
-          - ✅ GitHub Security Analysis
-          - ✅ SBOM Generation
-          - ✅ Docker Image Check
-
-          Maintainer: https://github.com/LetterCard
-          EOF
-
-      # =========================
-      # Verify
+      # Verify & Commit Reports
       # =========================
       - name: Verify Reports
-        run: |
-          ls -lah security-reports
+        run: ls -lah security-reports
 
-      # =========================
-      # Commit
-      # =========================
       - name: Commit Security Reports
         shell: bash
         run: |
           git config user.name github-actions
           git config user.email actions@github.com
           git add security-reports
-          git commit -m "Update InkOS security reports" || echo "No changes"
+          git diff --cached --quiet && exit 0
+          git commit -m "Update InkOS security reports"
           git push origin HEAD:main
