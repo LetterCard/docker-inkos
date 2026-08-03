@@ -13,7 +13,12 @@ InkOS 是一个面向小说与故事创作的 AI Agent 系统。
 
 支持写作、审阅、修改等完整创作流程，并提供 Web Studio 工作台。
 
-本项目将 InkOS 封装为长期运行 Docker 服务，方便部署到 NAS、服务器以及云环境。
+本项目将 InkOS 封装为长期运行 Docker 服务，适合部署到：
+
+- 飞牛 NAS
+- 群晖 NAS
+- 家庭服务器
+- 云服务器
 
 ---
 
@@ -59,7 +64,7 @@ http://NAS-IP:4567
 
 # ⚙️ 数据持久化
 
-第三版架构统一使用：
+容器：
 
 ```
 /data
@@ -71,11 +76,17 @@ http://NAS-IP:4567
 /vol1/docker/inkos/data
 ```
 
-目录映射：
+目录：
 
-|宿主机|容器|用途|
-|-|-|-|
-|data|/data|InkOS全部数据|
+```
+data/
+
+├── .env
+├── .inkos
+├── projects
+├── logs
+└── 其他运行数据
+```
 
 升级镜像不会影响：
 
@@ -83,6 +94,116 @@ http://NAS-IP:4567
 - 模型配置
 - 小说项目
 - 创作记录
+
+---
+
+# 🔑 AI 模型配置
+
+InkOS 支持两种配置方式：
+
+## 方式一：Web Studio 配置（推荐）
+
+启动后访问：
+
+```
+http://NAS-IP:4567
+```
+
+进入：
+
+```
+Studio
+ ↓
+服务配置
+```
+
+填写：
+
+- 服务商
+- API Key
+- Base URL
+- 模型名称
+
+保存后配置会持久化到：
+
+```
+/data
+```
+
+以后更新镜像、重启容器均不会丢失。
+
+---
+
+## 方式二：使用 .env 初始化
+
+创建：
+
+```
+/vol1/docker/inkos/data/.env
+```
+
+内容：
+
+```env
+INKOS_LLM_PROVIDER=openai
+INKOS_LLM_BASE_URL=https://api.openai.com/v1
+INKOS_LLM_API_KEY=your_api_key
+INKOS_LLM_MODEL=gpt-4o
+```
+
+支持 OpenAI 兼容接口：
+
+```env
+INKOS_LLM_PROVIDER=openai
+INKOS_LLM_BASE_URL=https://your-api/v1
+INKOS_LLM_API_KEY=your_key
+INKOS_LLM_MODEL=model_name
+```
+
+首次启动后：
+
+```
+/data/.env
+```
+
+会作为初始化配置。
+
+进入：
+
+```
+Studio
+ ↓
+服务配置
+ ↓
+从环境变量导入
+```
+
+即可导入。
+
+注意：
+
+`.env` 只是初始化数据。
+
+实际运行配置以：
+
+```
+/data
+```
+
+中的 Studio 配置为准。
+
+---
+
+# ⚙️ 环境变量
+
+|变量|说明|
+|-|-|
+|INKOS_STUDIO_PORT|Web Studio端口|
+|INKOS_VERSION|固定版本，关闭自动更新|
+|INKOS_LLM_PROVIDER|模型服务商|
+|INKOS_LLM_BASE_URL|OpenAI兼容接口地址|
+|INKOS_LLM_API_KEY|API Key|
+|INKOS_LLM_MODEL|模型名称|
 
 ---
 
@@ -162,7 +283,6 @@ node:22-bookworm-slim
 ✅ GitHub Security 检测
 
 ✅ SBOM 软件清单生成
-
 
 安全报告：
 
