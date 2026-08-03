@@ -1,13 +1,14 @@
-# InkOS Security Report
+# InkOS Security Status
 
 Image: bugseeker/inkos:latest
 
-Scan Date: 2026-08-03
+Status: PASS
 
-Status: Completed
+Generated Reports:
 
-Checks:
+- security-report.png
+- trivy-report.md
+- sbom.spdx.json
 
-- Trivy vulnerability scan
-- GitHub Security SARIF upload
-- SBOM generated
+Maintainer:
+https://github.com/LetterCard
