@@ -9,41 +9,50 @@ on:
 
   workflow_dispatch:
 
+
 permissions:
   contents: write
   security-events: write
   actions: read
 
+
 env:
   IMAGE_NAME: bugseeker/inkos
 
+
 jobs:
+
   security:
 
     if: |
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
 
+
     runs-on: ubuntu-latest
+
 
     steps:
 
-      - name: Checkout
+
+      - name: Checkout repository
         uses: actions/checkout@v5
 
 
-      - name: Create report folder
+
+      - name: Create security reports directory
         run: |
           mkdir -p security-reports
+
 
 
       # -------------------------
       # Trivy Vulnerability Scan
       # -------------------------
 
-      - name: Trivy Scan Report
+      - name: Trivy Vulnerability Scan
         continue-on-error: true
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.30.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}:latest
           format: table
@@ -52,13 +61,14 @@ jobs:
           ignore-unfixed: true
 
 
+
       # -------------------------
-      # Trivy SARIF
+      # Trivy SARIF Upload
       # -------------------------
 
       - name: Trivy SARIF Report
         continue-on-error: true
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.30.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}:latest
           format: sarif
@@ -67,16 +77,18 @@ jobs:
           ignore-unfixed: true
 
 
-      - name: Upload GitHub Security
+
+      - name: Upload SARIF to GitHub Security
         if: always()
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
 
 
+
       # -------------------------
-      # SBOM
+      # SBOM Generation
       # -------------------------
 
       - name: Generate SBOM
@@ -88,35 +100,40 @@ jobs:
           output-file: security-reports/sbom.spdx.json
 
 
+
       # -------------------------
-      # Security Status
+      # Security Status Report
       # -------------------------
 
       - name: Generate Security Status
         shell: bash
         run: |
-          echo "# InkOS Security Report" > security-reports/security-status.md
-          echo "" >> security-reports/security-status.md
-          echo "Image: ${{ env.IMAGE_NAME }}:latest" >> security-reports/security-status.md
-          echo "" >> security-reports/security-status.md
-          echo "Scan Date: $(date +"%Y-%m-%d")" >> security-reports/security-status.md
-          echo "" >> security-reports/security-status.md
-          echo "Status: Completed" >> security-reports/security-status.md
-          echo "" >> security-reports/security-status.md
-          echo "Checks:" >> security-reports/security-status.md
-          echo "" >> security-reports/security-status.md
-          echo "- Trivy vulnerability scan" >> security-reports/security-status.md
-          echo "- GitHub Security SARIF upload" >> security-reports/security-status.md
-          echo "- SBOM generated" >> security-reports/security-status.md
+          {
+            echo "# InkOS Security Report"
+            echo
+            echo "Image: ${{ env.IMAGE_NAME }}:latest"
+            echo
+            echo "Scan Date: $(date +"%Y-%m-%d")"
+            echo
+            echo "Status: Completed"
+            echo
+            echo "Checks:"
+            echo
+            echo "- Trivy vulnerability scan"
+            echo "- GitHub Security SARIF analysis"
+            echo "- SBOM software inventory"
+          } > security-reports/security-status.md
+
 
 
       # -------------------------
       # Verify Reports
       # -------------------------
 
-      - name: Check Reports
+      - name: Verify Security Reports
         run: |
           ls -lah security-reports
+
 
 
       # -------------------------
@@ -126,11 +143,17 @@ jobs:
       - name: Commit Security Reports
         shell: bash
         run: |
+
           git config user.name github-actions
           git config user.email actions@github.com
 
+
           git add security-reports
 
-          git commit -m "Update security reports" || echo "No changes"
+
+          git commit \
+            -m "Update security reports" \
+            || echo "No changes"
+
 
           git push origin HEAD:main
