@@ -262,6 +262,7 @@ node:22-bookworm-slim
 ✅ Trivy 漏洞扫描
 ✅ GitHub Security 检测
 ✅ SBOM 软件清单生成
+
 检测：
 - 系统依赖
 - Node.js 依赖
