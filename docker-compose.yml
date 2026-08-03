@@ -1,0 +1,17 @@
+services:
+  inkos:
+    image: bugseeker/inkos:latest
+    container_name: inkos
+    restart: unless-stopped
+    network_mode: bridge
+    ports:
+      - "4567:4567"
+    volumes:
+      # InkOS 配置文件
+      - /vol1/docker/inkos/config:/root/.inkos
+      # 创作项目数据
+      - /vol1/docker/inkos/books:/data/books
+      # 运行日志
+      - /vol1/docker/inkos/logs:/data/logs
+    environment:
+      TZ: Asia/Shanghai
