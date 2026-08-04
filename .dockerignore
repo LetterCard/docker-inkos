@@ -6,24 +6,12 @@
 
 # 版本控制（.git 历史体积大）
 .git
-.gitignore
 .github
 
-# macOS / Windows 系统文件
+# macOS 系统文件（Finder 会自动生成）
 .DS_Store
-Thumbs.db
 
-# 编辑器 / IDE 配置
-.idea
-.vscode
-
-# 依赖目录（防误加本地 node 项目）
-node_modules
-
-# 日志
-*.log
-
-# 密钥 / 环境变量（防止泄露进构建上下文）
+# 密钥 / 环境变量（安全红线：防止泄露进构建上下文）
 .env
 .env.*
 
