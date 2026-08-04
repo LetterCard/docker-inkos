@@ -198,9 +198,6 @@ docker run -d --name watchtower \
 
 > 📦 体积：构建时自动扫描运行时代码引用，动态裁剪未被引用的死重
 > （前端打包进 `dist/assets` 的依赖、构建工具链等，对上游任意版本自适应，
-> 见 `scripts/trim-node-modules.cjs`），
-> 拉取仅需 **~100MB**（压缩传输）/ 本地解压约 **360MB**。相比旧版（160MB / 665MB）缩小约 1/3。
-> Docker Hub 显示的是**压缩后**大小，`docker images` 显示的是**解压后**磁盘占用，两者不同属正常现象。
 
 ---
 
