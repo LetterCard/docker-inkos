@@ -10,3 +10,5 @@
 # 只放行构建必需文件
 !Dockerfile
 !docker-entrypoint.sh
+!scripts/
+!scripts/trim-node-modules.cjs
