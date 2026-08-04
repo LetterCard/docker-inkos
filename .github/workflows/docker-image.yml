@@ -1,13 +1,28 @@
 name: Build InkOS Docker
 
 on:
+  # 仓库变更（Dockerfile / entrypoint 等）触发重建，保证镜像与代码同步
+  push:
+    branches:
+      - main
+    paths:
+      - "Dockerfile"
+      - "docker-entrypoint.sh"
+      - ".dockerignore"
+      - "docker-compose.yml"
+      - ".github/workflows/docker-image.yml"
   schedule:
-    # 每天 UTC 03:00
+    # 每天 UTC 03:00 检测 InkOS 上游新版本
     - cron: "0 3 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
+
+# 避免定时任务与手动/推送构建重叠
+concurrency:
+  group: build-inkos-docker
+  cancel-in-progress: true
 
 env:
   IMAGE_NAME: bugseeker/inkos
@@ -31,21 +46,27 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       # ------------------------------------------------------
-      # Check Docker Hub existing tag
+      # 判断是否需要构建
+      # push（Dockerfile / entrypoint 变更）→ 强制重建 latest
+      # 定时 / 手动 → 仅当 npm 有新版本且 Docker Hub 尚未发布
       # ------------------------------------------------------
       - name: Check existing image
         id: check
         shell: bash
         run: |
-          VERSION=${{ steps.version.outputs.version }}
-          STATUS=$(curl -s \
-            "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags/${VERSION}" \
-            | grep -o '"name"' || true)
-
-          if [ -z "$STATUS" ]; then
+          if [ "${{ github.event_name }}" = "push" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
-            echo "changed=false" >> $GITHUB_OUTPUT
+            VERSION=${{ steps.version.outputs.version }}
+            STATUS=$(curl -s \
+              "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags/${VERSION}" \
+              | grep -o '"name"' || true)
+
+            if [ -z "$STATUS" ]; then
+              echo "changed=true" >> $GITHUB_OUTPUT
+            else
+              echo "changed=false" >> $GITHUB_OUTPUT
+            fi
           fi
 
   # ==========================================================
@@ -85,6 +106,7 @@ jobs:
             org.opencontainers.image.title=InkOS Docker
             org.opencontainers.image.version=${{ needs.check-version.outputs.version }}
             org.opencontainers.image.source=https://github.com/Narcooo/inkos
+            org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ github.event.repository.updated_at }}
 
       - name: Build and Push Docker Image
