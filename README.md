@@ -10,7 +10,11 @@
 
 适用于 **NAS** · **家庭服务器** · **云服务器**
 
-[![Docker 构建状态](https://github.com/LetterCard/inkos/actions/workflows/docker-image.yml/badge.svg)](https://github.com/LetterCard/inkos/actions/workflows/docker-image.yml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/bugseeker/inkos?label=拉取量)](https://hub.docker.com/r/bugseeker/inkos)
+[![Docker Image Version](https://img.shields.io/docker/v/bugseeker/inkos/latest?label=最新版本)](https://hub.docker.com/r/bugseeker/inkos)
+[![Docker Image Size](https://img.shields.io/docker/image-size/bugseeker/inkos/latest?label=镜像大小)](https://hub.docker.com/r/bugseeker/inkos)
+
+<sub>构建状态见 [GitHub Actions](https://github.com/LetterCard/inkos/actions)（代码仓库为私有，需登录查看）</sub>
 
 </div>
 
@@ -170,7 +174,8 @@ InkOS 发布新版 → GitHub Actions 每日检测（UTC 03:00）
 
 **查看构建状态与报告：**
 
-- **实时状态**：README 顶部的构建徽章（代码仓库为私有，徽章仅登录用户可见；镜像本身公开）
+- **镜像状态**：README 顶部 Docker Hub 徽章（拉取量 / 最新版本 / 镜像大小），任何人可见
+- **构建状态**：代码仓库为私有，需登录仓库 **Actions** 页查看
 - **构建报告**：仓库 **Actions** 页 → 最新一次 `Build InkOS Docker` run → **Summary** 标签页，包含版本 / 架构 / 推送目标 / 构建时间
 - **漏洞扫描**：同一 run 中 `Trivy vulnerability scan` 步骤日志
 
