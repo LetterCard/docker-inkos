@@ -7,6 +7,11 @@
 # Upstream:
 # https://github.com/Narcooo/inkos
 #
+# 设计原则：
+#   - 镜像内不含源码 / 开发依赖，仅运行时
+#   - 版本在云端 CI（GitHub Actions）构建时固定，镜像内不自更新
+#   - 唯一持久化目录 /data，宿主只映射一个目录
+#   - 项目结构由首次启动时 inkos 自带 bootstrap 自动生成（与上游版本永远一致）
 # =====================================================
 
 FROM node:22-bookworm-slim
@@ -29,17 +34,15 @@ RUN apt-get update \
 
 # -----------------------------------------------------
 # InkOS version
-# GitHub Actions will replace this
+# GitHub Actions 构建时传入精确版本；ENV 仅用于启动日志展示
 # -----------------------------------------------------
 
 ARG INKOS_VERSION=latest
+ENV INKOS_VERSION=${INKOS_VERSION}
 
-RUN npm install -g "@actalk/inkos@${INKOS_VERSION}" \
+RUN npm config set update-notifier false --global \
+    && npm install -g --no-audit --no-fund --loglevel=error "@actalk/inkos@${INKOS_VERSION}" \
     && npm cache clean --force
-
-# -----------------------------------------------------
-# Data directory
-# -----------------------------------------------------
 
 WORKDIR /data
 
@@ -56,8 +59,8 @@ EXPOSE 4567
 
 HEALTHCHECK \
     --interval=30s \
-    --timeout=10s \
-    --start-period=60s \
+    --timeout=5s \
+    --start-period=20s \
     --retries=3 \
     CMD curl -fs http://127.0.0.1:${INKOS_STUDIO_PORT} || exit 1
 
