@@ -10,7 +10,7 @@
 
 适用于 **NAS** · **家庭服务器** · **云服务器**
 
-[![Docker 构建状态](https://github.com/LetterCard/inkos-docker/actions/workflows/docker-image.yml/badge.svg)](https://github.com/LetterCard/inkos-docker/actions/workflows/docker-image.yml)
+[![Docker 构建状态](https://github.com/LetterCard/inkos/actions/workflows/docker-image.yml/badge.svg)](https://github.com/LetterCard/inkos/actions/workflows/docker-image.yml)
 
 </div>
 
@@ -31,14 +31,14 @@
 | Registry | 拉取命令 |
 | :- | :- |
 | Docker Hub（公开） | `docker pull bugseeker/inkos:latest` |
-| GitHub Container Registry | `docker pull ghcr.io/lettercard/inkos-docker:latest` |
+| GitHub Container Registry | `docker pull ghcr.io/lettercard/inkos:latest` |
 
 > 🔒 **私人仓库说明**：本仓库为私有仓库，GHCR 包默认跟随仓库私有。
 > 拉取 GHCR 镜像前需先登录（有仓库访问权限的账号）：
 >
 > ```bash
 > echo $GITHUB_TOKEN | docker login ghcr.io -u lettercard --password-stdin
-> docker pull ghcr.io/lettercard/inkos-docker:latest
+> docker pull ghcr.io/lettercard/inkos:latest
 > ```
 >
 > Docker Hub 镜像为公开，无需登录直接拉取。两者镜像内容完全一致。
@@ -209,9 +209,9 @@ docker run -d --name watchtower \
 | | |
 | :- | :- |
 | InkOS | https://github.com/Narcooo/inkos |
-| Docker | https://github.com/LetterCard/inkos-docker |
+| Docker | https://github.com/LetterCard/inkos |
 | Docker Hub | https://hub.docker.com/r/bugseeker/inkos |
-| GHCR | https://github.com/users/lettercard/packages/container/package/inkos-docker |
+| GHCR | https://github.com/users/lettercard/packages/container/package/inkos |
 
 ---
 
