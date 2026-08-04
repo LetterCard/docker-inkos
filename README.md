@@ -33,13 +33,16 @@
 
 ## 📥 镜像拉取
 
-两个 Registry 每次构建同步推送，内容一致，任选其一：
-
+🐳 从 Docker Hub 拉取
 ```bash
-docker pull bugseeker/inkos:latest                    # Docker Hub
-docker pull ghcr.io/lettercard/inkos:latest           # GHCR
+docker pull bugseeker/inkos:latest
+```
+🐙 从 GitHub Container Registry 拉取
+```bash
+docker pull ghcr.io/lettercard/inkos:latest
 ```
 
+💡 提示：两个镜像内容完全一致，选择离你网络更近的注册中心即可获得更快的下载速度。
 ---
 
 ## 🚀 快速部署
@@ -195,8 +198,7 @@ docker run -d --name watchtower \
 | :- | :- | :- |
 | `:latest` 最新<br>`:版本号` 固定回滚 | linux/amd64<br>linux/arm64 | `node:22-alpine`（极简运行时，不含构建产物）<br>自带 node:sqlite 加速 |
 
-> 📦 体积：构建时自动扫描运行时代码引用，动态裁剪未被引用的死重
-> （前端打包进 `dist/assets` 的依赖、构建工具链等，对上游任意版本自适应，
+> 📦 体积：构建时自动扫描运行时代码引用，动态裁剪未被引用的死重，对上游任意版本自适应。
 
 ---
 
