@@ -1,7 +1,8 @@
 name: Build InkOS Docker
 
 on:
-  # 仓库变更（Dockerfile / entrypoint 等）触发重建，保证镜像与代码同步
+  # 仅镜像内容变更（Dockerfile / entrypoint / .dockerignore）才重建；
+  # CI 工具版本升级（dependabot 等）不触发，避免浪费构建
   push:
     branches:
       - main
@@ -9,8 +10,6 @@ on:
       - "Dockerfile"
       - "docker-entrypoint.sh"
       - ".dockerignore"
-      - "docker-compose.yml"
-      - ".github/workflows/docker-image.yml"
   schedule:
     # 每天 UTC 03:00 检测 InkOS 上游新版本
     - cron: "0 3 * * *"
@@ -33,6 +32,8 @@ jobs:
   # ==========================================================
   check-version:
     runs-on: ubuntu-latest
+    # 避免 npm / Docker Hub 网络异常导致任务长时间挂起
+    timeout-minutes: 5
     outputs:
       version: ${{ steps.version.outputs.version }}
       changed: ${{ steps.check.outputs.changed }}
