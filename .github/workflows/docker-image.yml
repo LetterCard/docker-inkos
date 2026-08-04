@@ -12,10 +12,12 @@ on:
 
 permissions:
   contents: read
+  # 推送到 GitHub Container Registry (ghcr.io) 必需
+  packages: write
 
 # 避免定时任务与手动/推送构建重叠
 concurrency:
-  group: build-inkos-docker
+  group: build-inkos
   cancel-in-progress: true
 
 env:
@@ -79,11 +81,25 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_TOKEN }}
 
+      - name: Login GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v4
 
       - name: Setup Buildx
         uses: docker/setup-buildx-action@v4
+
+      - name: Prepare image names
+        id: images
+        shell: bash
+        run: |
+          # GHCR 镜像路径必须全小写（ghcr.io/lettercard/inkos），否则推送被拒绝
+          echo "ghcr=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
 
       - name: Set build timestamp
         id: buildtime
@@ -94,7 +110,9 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.IMAGE_NAME }}
+          images: |
+            ${{ env.IMAGE_NAME }}
+            ${{ steps.images.outputs.ghcr }}
           tags: |
             type=raw,value=latest
             type=raw,value=${{ needs.check-version.outputs.version }}
@@ -129,6 +147,25 @@ jobs:
           severity: HIGH,CRITICAL
           ignore-unfixed: true
           exit-code: '0'
+
+      # ------------------------------------------------------
+      # 构建报告：写入 Actions 页面 Summary（README 徽章展示实时状态）
+      # ------------------------------------------------------
+      - name: Write build summary
+        shell: bash
+        run: |
+          {
+            echo "## 🏗️ InkOS 构建完成"
+            echo ""
+            echo "- **版本**：\`${{ needs.check-version.outputs.version }}\`"
+            echo "- **架构**：linux/amd64 + linux/arm64"
+            echo "- **推送**：Docker Hub \`${{ env.IMAGE_NAME }}\`、GHCR \`${{ steps.images.outputs.ghcr }}\`"
+            echo "- **标签**：\`latest\`、\`${{ needs.check-version.outputs.version }}\`"
+            echo "- **提交**：\`${{ github.sha }}\`"
+            echo "- **构建时间**：${{ steps.buildtime.outputs.time }}"
+            echo ""
+            echo "> 漏洞扫描结果见上方 Trivy 步骤日志；冒烟测试见 smoke-test 任务。"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ==========================================================
   # Smoke test
