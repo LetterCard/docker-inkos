@@ -1,26 +1,31 @@
-# Version Control
+# =====================================================
+# .dockerignore — Docker 构建上下文排除清单
+# 本镜像 Dockerfile 只 COPY docker-entrypoint.sh，
+# 其余文件不参与构建；排除后减小上下文、加速打包
+# =====================================================
+
+# 版本控制（.git 历史体积大）
 .git
+.gitignore
 .github
 
-# Dependencies
+# macOS / Windows 系统文件
+.DS_Store
+Thumbs.db
+
+# 编辑器 / IDE 配置
+.idea
+.vscode
+
+# 依赖目录（防误加本地 node 项目）
 node_modules
 
-# Logs
-npm-debug.log
-pnpm-debug.log
+# 日志
+*.log
 
-# Environment Variables
+# 密钥 / 环境变量（防止泄露进构建上下文）
 .env
 .env.*
 
-# Security
-security-reports
-
-# Docker
-Dockerfile
-docker-compose.yml
-
-# Documentation
+# 文档（不参与构建）
 README.md
-CHANGELOG.md
-SECURITY.md
