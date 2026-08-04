@@ -160,27 +160,24 @@ INKOS_LLM_MODEL=gpt-4o
 
 ## 🔄 自动更新
 
-```
-InkOS 发布新版 → GitHub Actions 每日检测（UTC 03:00）
-→ 云端构建 amd64 + arm64 → 推送 Docker Hub + GHCR → Trivy 漏洞扫描 → 冒烟测试
-```
+1. **每日检测**（UTC 03:00）— 检查 npm 上游新版本；Docker Hub 已有同版本则跳过本次构建
+2. **冒烟测试** — 构建 amd64 并启动容器，验证 Studio HTTP 与 CLI，通过才继续
+3. **正式构建** — linux/amd64 + linux/arm64 双架构
+4. **推送镜像** — Docker Hub + GHCR（`latest` + 版本号）
+5. **漏洞扫描** — Trivy（HIGH/CRITICAL，报告模式，不阻断自动更新）
 
 - ✅ 构建 / 更新全在云端，本地只拉镜像，**零构建资源占用**
 - ✅ 镜像内不自更新：版本在云端固定，行为可预测、可回滚
 - ✅ 镜像带 `version` / `revision` / `created` 标签，全程可追溯
 
-**查看构建状态与报告：**
-
-- **镜像状态**：README 顶部 Docker Hub 徽章（拉取量 / 最新版本 / 镜像大小），任何人可见
-- **构建状态**：代码仓库为私有，需登录仓库 **Actions** 页查看
-- **构建报告**：仓库 **Actions** 页 → 最新一次 `Build InkOS Docker` run → **Summary** 标签页，包含版本 / 架构 / 推送目标 / 构建时间
-- **漏洞扫描**：同一 run 中 `Trivy vulnerability scan` 步骤日志
 
 **更新容器：**
 
 ```bash
 docker compose pull && docker compose up -d
 ```
+
+> 💡 **回滚**：将 compose 中 `image` 改为固定版本号（如 `bugseeker/inkos:1.0.0`），再执行 `docker compose up -d`
 
 **或 Watchtower 全自动更新：**
 
