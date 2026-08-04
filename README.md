@@ -139,7 +139,6 @@ INKOS_LLM_MODEL=gpt-4o
 
 ```
 InkOS 发布新版 → GitHub Actions 每日检测（UTC 03:00）
-→ 云端构建 amd64 + arm64 → Trivy 漏洞扫描 → 推送 Docker Hub
 ```
 
 - ✅ 构建 / 更新全在云端，本地只拉镜像，**零构建资源占用**
@@ -166,7 +165,12 @@ docker run -d --name watchtower \
 
 | 🏷 标签 | 🖥 架构 | 🪶 基础镜像 |
 | :- | :- | :- |
-| `:latest` 最新<br>`:版本号` 固定回滚 | linux/amd64<br>linux/arm64 | `node:22-bookworm-slim`<br>自带 node:sqlite 加速 |
+| `:latest` 最新<br>`:版本号` 固定回滚 | linux/amd64<br>linux/arm64 | `node:22-alpine`（极简运行时，不含构建产物）<br>自带 node:sqlite 加速 |
+
+> 📦 体积：云端构建时已裁剪 Studio 前端打包进 `dist/assets` 的依赖（mermaid、lucide、shiki 等）
+> 及构建工具链（shadcn、ts-morph、babel、postcss 等），
+> 拉取仅需 **~100MB**（压缩传输）/ 本地解压约 **360MB**。相比旧版（160MB / 665MB）缩小约 1/3。
+> Docker Hub 显示的是**压缩后**大小，`docker images` 显示的是**解压后**磁盘占用，两者不同属正常现象。
 
 ---
 
