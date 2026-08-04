@@ -196,8 +196,9 @@ docker run -d --name watchtower \
 | :- | :- | :- |
 | `:latest` 最新<br>`:版本号` 固定回滚 | linux/amd64<br>linux/arm64 | `node:22-alpine`（极简运行时，不含构建产物）<br>自带 node:sqlite 加速 |
 
-> 📦 体积：云端构建时已裁剪 Studio 前端打包进 `dist/assets` 的依赖（mermaid、lucide、shiki 等）
-> 及构建工具链（shadcn、ts-morph、babel、postcss 等），
+> 📦 体积：构建时自动扫描运行时代码引用，动态裁剪未被引用的死重
+> （前端打包进 `dist/assets` 的依赖、构建工具链等，对上游任意版本自适应，
+> 见 `scripts/trim-node-modules.cjs`），
 > 拉取仅需 **~100MB**（压缩传输）/ 本地解压约 **360MB**。相比旧版（160MB / 665MB）缩小约 1/3。
 > Docker Hub 显示的是**压缩后**大小，`docker images` 显示的是**解压后**磁盘占用，两者不同属正常现象。
 

@@ -49,43 +49,19 @@ ENV INKOS_VERSION=${INKOS_VERSION}
 # 另裁掉 inkos-studio 误带进来的构建工具链（shadcn / ts-morph / babel / postcss 等），
 # 运行时无任何代码引用。AI 供应商 SDK（openai 等）不可裁：pi-ai 为静态 import。
 
+# 裁剪分析脚本（仅构建期使用，RUN 结束后删除，不进最终镜像）
+COPY scripts/trim-node-modules.cjs /tmp/trim-node-modules.cjs
+
+# 动态裁剪：构建时扫描运行时代码引用，自动决定保留/删除，对上游任意版本自适应。
+# 只删"未被任何运行时引用"的顶层包；被引用的依赖闭包与代码中出现过的包一律保留，
+# 永不裁坏。裁剪日志见构建输出 TRIM 行（/scripts/trim-node-modules.cjs）。
+
 RUN npm config set update-notifier false --global \
     && npm install -g --no-audit --no-fund --loglevel=error "@actalk/inkos@${INKOS_VERSION}" \
-    && rm -rf \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/mermaid \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/@mermaid-js \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/lucide-react \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/@base-ui \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/@streamdown \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/@shikijs \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/@xyflow \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/@radix-ui \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/@fontsource-variable \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/cmdk \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/zustand \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/motion \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/framer-motion \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/tw-animate-css \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/tailwind-merge \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/class-variance-authority \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/clsx \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/react-dom \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/shadcn \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/ts-morph \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/@ts-morph \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/@babel \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/postcss \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/postcss-selector-parser \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/recast \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/browserslist \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/cosmiconfig \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/msw \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/tsconfig-paths \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/stringify-object \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/fuzzysort \
-        /usr/local/lib/node_modules/@actalk/inkos/node_modules/@dotenvx \
+    && node /tmp/trim-node-modules.cjs /usr/local/lib/node_modules/@actalk/inkos \
     && rm -rf /usr/local/lib/node_modules/corepack \
-    && npm cache clean --force
+    && npm cache clean --force \
+    && rm -f /tmp/trim-node-modules.cjs
 
 WORKDIR /data
 

@@ -38,10 +38,12 @@ seed_env() {
     fi
     echo "[inkos] 写入初始化配置 ${TARGET}（来自容器环境变量）"
     {
-        [ -n "${INKOS_LLM_PROVIDER:-}" ] && echo "INKOS_LLM_PROVIDER=${INKOS_LLM_PROVIDER}"
-        [ -n "${INKOS_LLM_BASE_URL:-}" ] && echo "INKOS_LLM_BASE_URL=${INKOS_LLM_BASE_URL}"
-        [ -n "${INKOS_LLM_API_KEY:-}" ] && echo "INKOS_LLM_API_KEY=${INKOS_LLM_API_KEY}"
-        [ -n "${INKOS_LLM_MODEL:-}" ] && echo "INKOS_LLM_MODEL=${INKOS_LLM_MODEL}"
+        # 用 `[ -z X ] || cmd` 而非 `[ -n X ] && cmd`：空值时行退出码为 true，
+        # 避免 set -e 下写入块整体返回非 0 导致脚本提前退出
+        [ -z "${INKOS_LLM_PROVIDER:-}" ] || echo "INKOS_LLM_PROVIDER=${INKOS_LLM_PROVIDER}"
+        [ -z "${INKOS_LLM_BASE_URL:-}" ] || echo "INKOS_LLM_BASE_URL=${INKOS_LLM_BASE_URL}"
+        [ -z "${INKOS_LLM_API_KEY:-}" ] || echo "INKOS_LLM_API_KEY=${INKOS_LLM_API_KEY}"
+        [ -z "${INKOS_LLM_MODEL:-}" ] || echo "INKOS_LLM_MODEL=${INKOS_LLM_MODEL}"
     } > "${TARGET}"
 }
 seed_env "${PROJECT_ENV}"
