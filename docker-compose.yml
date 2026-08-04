@@ -1,5 +1,7 @@
 services:
   inkos:
+    # 镜像由云端 CI（GitHub Actions）每日自动构建并推送 Docker Hub。
+    # 升级方式：docker compose pull && docker compose up -d
     image: bugseeker/inkos:latest
     container_name: inkos
     restart: unless-stopped
@@ -7,7 +9,13 @@ services:
     ports:
       - "4567:4567"
     volumes:
+      # 唯一持久化目录：项目配置、小说数据、API Key、.env 全部在此
       - /vol1/docker/inkos/data:/data
     environment:
       TZ: Asia/Shanghai
       INKOS_STUDIO_PORT: 4567
+      # 可选：首次启动时自动写入 /data/.env（项目级初始化配置，之后以 Studio 配置为准）
+      # INKOS_LLM_PROVIDER=openai
+      # INKOS_LLM_BASE_URL=https://api.openai.com/v1
+      # INKOS_LLM_API_KEY=your_api_key
+      # INKOS_LLM_MODEL=gpt-4o
