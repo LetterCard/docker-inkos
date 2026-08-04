@@ -123,7 +123,48 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ steps.buildtime.outputs.time }}
 
-      - name: Build and Push Docker Image
+      # ------------------------------------------------------
+      # 先测后推：先构建 amd64 并冒烟测试（HTTP + CLI），
+      # 通过后才推送双平台镜像，保证 Registry 上不会出现坏镜像
+      # ------------------------------------------------------
+      - name: Build (amd64, for smoke test)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          build-args: |
+            INKOS_VERSION=${{ needs.check-version.outputs.version }}
+          tags: inkos-smoke:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test
+        shell: bash
+        run: |
+          # --network host：共享宿主机网络，直接访问 4567，避免固定端口被占用
+          docker run -d --name inkos-smoke --network host inkos-smoke:latest
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:4567/ >/dev/null 2>&1; then
+              echo "Studio HTTP OK"
+              # CLI 自检：HTTP 200 只验证了服务端，CLI 才是受裁剪影响最大的面
+              echo "--- CLI check: inkos --version ---"
+              docker exec inkos-smoke inkos --version
+              echo "--- CLI check: inkos --help (head) ---"
+              docker exec inkos-smoke inkos --help | head -5
+              docker logs inkos-smoke 2>&1 | tail -5
+              docker rm -f inkos-smoke >/dev/null 2>&1
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Studio failed to respond within 60s" >&2
+          docker logs inkos-smoke 2>&1 | tail -30
+          docker rm -f inkos-smoke >/dev/null 2>&1
+          exit 1
+
+      - name: Build and Push Docker Image (multi-arch)
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -164,54 +205,5 @@ jobs:
             echo "- **提交**：\`${{ github.sha }}\`"
             echo "- **构建时间**：${{ steps.buildtime.outputs.time }}"
             echo ""
-            echo "> 漏洞扫描结果见上方 Trivy 步骤日志；冒烟测试见 smoke-test 任务。"
+            echo "> 冒烟测试（HTTP + CLI）已通过后才推送；漏洞扫描见上方 Trivy 步骤日志。"
           } >> "$GITHUB_STEP_SUMMARY"
-
-  # ==========================================================
-  # Smoke test
-  # 构建后可裁剪大量前端依赖，这里启动镜像验证 Studio 可正常服务，
-  # 防止上游新版本改变依赖结构后静默构建出坏镜像
-  # ==========================================================
-  smoke-test:
-    needs:
-      - docker-build
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Set up Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Build (no push, cache from gha)
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: linux/amd64
-          push: false
-          load: true
-          build-args: |
-            INKOS_VERSION=${{ needs.check-version.outputs.version }}
-          tags: inkos-smoke:latest
-          cache-from: type=gha
-
-      - name: Run and verify Studio
-        shell: bash
-        run: |
-          # --network host：共享宿主机网络，直接访问 4567，避免固定端口被占用
-          docker run -d --name inkos-smoke --network host inkos-smoke:latest
-          for i in $(seq 1 30); do
-            if curl -sf http://127.0.0.1:4567/ >/dev/null 2>&1; then
-              echo "Studio HTTP OK"
-              docker logs inkos-smoke 2>&1 | tail -5
-              docker rm -f inkos-smoke >/dev/null 2>&1
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Studio failed to respond within 60s" >&2
-          docker logs inkos-smoke 2>&1 | tail -30
-          docker rm -f inkos-smoke >/dev/null 2>&1
-          exit 1
