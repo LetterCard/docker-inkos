@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   # 推送到 GitHub Container Registry (ghcr.io) 必需
   packages: write
 
@@ -207,3 +207,40 @@ jobs:
             echo ""
             echo "> 冒烟测试（HTTP + CLI）已通过后才推送；漏洞扫描见上方 Trivy 步骤日志。"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # ------------------------------------------------------
+      # 生成 status.svg 并提交回仓库，供 README 内嵌展示构建状态
+      # （workflow 无 push 触发器，提交 status.svg 不会再次触发构建）
+      # ------------------------------------------------------
+      - name: Generate build status SVG
+        shell: bash
+        run: |
+          cat > status.svg <<EOF
+          <svg xmlns="http://www.w3.org/2000/svg" width="560" height="188" viewBox="0 0 560 188" role="img" aria-label="InkOS Docker 构建状态">
+            <rect width="560" height="188" rx="14" fill="#0d1117"/>
+            <rect y="0" width="560" height="46" rx="14" fill="#238636"/>
+            <rect y="32" width="560" height="14" fill="#238636"/>
+            <text x="24" y="30" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="16" font-weight="600" fill="#ffffff">InkOS Docker · 构建成功</text>
+            <text x="24" y="84" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#8b949e">版本</text>
+            <text x="280" y="84" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#e6edf3">${{ needs.check-version.outputs.version }}</text>
+            <text x="24" y="114" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#8b949e">架构</text>
+            <text x="280" y="114" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#e6edf3">linux/amd64 + linux/arm64</text>
+            <text x="24" y="144" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#8b949e">构建时间</text>
+            <text x="280" y="144" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#e6edf3">${{ steps.buildtime.outputs.time }}</text>
+            <text x="24" y="174" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#8b949e">推送</text>
+            <text x="280" y="174" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#e6edf3">Docker Hub + GHCR</text>
+          </svg>
+          EOF
+
+      - name: Commit build status SVG
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add status.svg
+          if git diff --cached --quiet; then
+            echo "status.svg 无变化，跳过提交"
+          else
+            git commit -m "chore: 更新构建状态 SVG"
+            git push
+          fi
