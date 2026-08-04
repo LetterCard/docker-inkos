@@ -14,7 +14,9 @@
 [![Docker Image Version](https://img.shields.io/docker/v/bugseeker/inkos/latest?label=最新版本)](https://hub.docker.com/r/bugseeker/inkos)
 [![Docker Image Size](https://img.shields.io/docker/image-size/bugseeker/inkos/latest?label=镜像大小)](https://hub.docker.com/r/bugseeker/inkos)
 
-<sub>构建状态见 [GitHub Actions](https://github.com/LetterCard/inkos/actions)（代码仓库为私有，需登录查看）</sub>
+[![InkOS 构建状态](https://raw.githubusercontent.com/LetterCard/inkos/main/status.svg)](https://github.com/LetterCard/inkos/actions)
+
+<sub>构建状态卡由 CI 每次构建后自动更新（代码仓库为私有，需登录查看）</sub>
 
 </div>
 
