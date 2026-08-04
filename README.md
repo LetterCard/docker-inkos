@@ -13,10 +13,11 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/bugseeker/inkos?label=拉取量)](https://hub.docker.com/r/bugseeker/inkos)
 [![Docker Image Version](https://img.shields.io/docker/v/bugseeker/inkos/latest?label=最新版本)](https://hub.docker.com/r/bugseeker/inkos)
 [![Docker Image Size](https://img.shields.io/docker/image-size/bugseeker/inkos/latest?label=镜像大小)](https://hub.docker.com/r/bugseeker/inkos)
+[![Last Updated](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fhub.docker.com%2Fv2%2Frepositories%2Fbugseeker%2Finkos%2Ftags%2Flatest&query=last_updated&label=最近构建&color=blue)](https://hub.docker.com/r/bugseeker/inkos)
+[![Arch](https://img.shields.io/badge/架构-linux%2Famd64%20%2B%20arm64-4c9f38)](https://hub.docker.com/r/bugseeker/inkos)
+[![Registry](https://img.shields.io/badge/推送-Docker%20Hub%20%2B%20GHCR-blue)](https://hub.docker.com/r/bugseeker/inkos)
 
-[![InkOS 构建状态](https://raw.githubusercontent.com/LetterCard/inkos/main/status.svg)](https://github.com/LetterCard/inkos/actions)
-
-<sub>构建状态卡由 CI 每次构建后自动更新（代码仓库为私有，需登录查看）</sub>
+<sub>徽章数据全部来自 Docker Hub 公开 API，无需登录；构建成败详情见 [GitHub Actions](https://github.com/LetterCard/inkos/actions)（代码仓库为私有）</sub>
 
 </div>
 
