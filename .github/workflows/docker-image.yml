@@ -117,7 +117,7 @@ jobs:
       # 漏洞扫描（报告模式，不阻断自动更新；README 声明此项，予以补齐）
       # ------------------------------------------------------
       - name: Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE_NAME }}:${{ needs.check-version.outputs.version }}
           format: table
