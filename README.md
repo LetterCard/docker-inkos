@@ -30,21 +30,12 @@
 
 ## 📥 镜像拉取
 
-两个 Registry 每次构建同步推送，**均为公开镜像**，内容一致，任选其一：
+两个 Registry 每次构建同步推送，内容一致，任选其一：
 
-| Registry | 拉取命令 |
-| :- | :- |
-| Docker Hub（免登录） | `docker pull bugseeker/inkos:latest` |
-| GitHub Container Registry | `docker pull ghcr.io/lettercard/inkos:latest` |
-
-> 💡 GHCR 公开包拉取仍需先登录 ghcr.io（公开包登录即拉，无需授权）：
->
-> ```bash
-> echo $GITHUB_TOKEN | docker login ghcr.io -u lettercard --password-stdin
-> docker pull ghcr.io/lettercard/inkos:latest
-> ```
->
-> Docker Hub 镜像为公开，无需登录直接拉取。两者镜像内容完全一致。
+```bash
+docker pull bugseeker/inkos:latest                    # Docker Hub
+docker pull ghcr.io/lettercard/inkos:latest           # GHCR
+```
 
 ---
 
