@@ -49,14 +49,13 @@ jobs:
         shell: bash
         run: |
           VERSION=${{ steps.version.outputs.version }}
-          STATUS=$(curl -s \
+          # -f：HTTP 404（标签不存在）即失败 → 需要构建；200（已存在）→ 跳过
+          if curl -sf \
             "https://hub.docker.com/v2/repositories/${IMAGE_NAME}/tags/${VERSION}" \
-            | grep -o '"name"' || true)
-
-          if [ -z "$STATUS" ]; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
+            >/dev/null 2>&1; then
             echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
   # ==========================================================
@@ -67,6 +66,8 @@ jobs:
       - check-version
     if: needs.check-version.outputs.changed == 'true'
     runs-on: ubuntu-latest
+    # 依赖树较大，npm install 耗时长，防止网络异常挂起
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -111,3 +112,63 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # ------------------------------------------------------
+      # 漏洞扫描（报告模式，不阻断自动更新；README 声明此项，予以补齐）
+      # ------------------------------------------------------
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ needs.check-version.outputs.version }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '0'
+
+  # ==========================================================
+  # Smoke test
+  # 构建后可裁剪大量前端依赖，这里启动镜像验证 Studio 可正常服务，
+  # 防止上游新版本改变依赖结构后静默构建出坏镜像
+  # ==========================================================
+  smoke-test:
+    needs:
+      - docker-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build (no push, cache from gha)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          build-args: |
+            INKOS_VERSION=${{ needs.check-version.outputs.version }}
+          tags: inkos-smoke:latest
+          cache-from: type=gha
+
+      - name: Run and verify Studio
+        shell: bash
+        run: |
+          docker run -d --name inkos-smoke -p 14567:4567 inkos-smoke:latest
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:14567/ >/dev/null 2>&1; then
+              echo "Studio HTTP OK"
+              docker logs inkos-smoke 2>&1 | tail -5
+              docker rm -f inkos-smoke >/dev/null 2>&1
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Studio failed to respond within 60s" >&2
+          docker logs inkos-smoke 2>&1 | tail -30
+          docker rm -f inkos-smoke >/dev/null 2>&1
+          exit 1
