@@ -10,6 +10,8 @@
 
 适用于 **NAS** · **家庭服务器** · **云服务器**
 
+[![Docker 构建状态](https://github.com/LetterCard/inkos-docker/actions/workflows/docker-image.yml/badge.svg)](https://github.com/LetterCard/inkos-docker/actions/workflows/docker-image.yml)
+
 </div>
 
 ---
@@ -19,6 +21,27 @@
 | 📖 小说创作 | 🎬 剧本开发 | 🌍 世界观构建 | 🎭 角色设计 |
 | :-: | :-: | :-: | :-: |
 | 🔍 内容审核 | ✏️ 自动修改 | 🧠 Agent 工作流 | 🖥 Web Studio |
+
+---
+
+## 📥 镜像拉取
+
+两个 Registry 每次构建同步推送，内容一致，任选其一：
+
+| Registry | 拉取命令 |
+| :- | :- |
+| Docker Hub（公开） | `docker pull bugseeker/inkos:latest` |
+| GitHub Container Registry | `docker pull ghcr.io/lettercard/inkos-docker:latest` |
+
+> 🔒 **私人仓库说明**：本仓库为私有仓库，GHCR 包默认跟随仓库私有。
+> 拉取 GHCR 镜像前需先登录（有仓库访问权限的账号）：
+>
+> ```bash
+> echo $GITHUB_TOKEN | docker login ghcr.io -u lettercard --password-stdin
+> docker pull ghcr.io/lettercard/inkos-docker:latest
+> ```
+>
+> Docker Hub 镜像为公开，无需登录直接拉取。两者镜像内容完全一致。
 
 ---
 
@@ -139,11 +162,18 @@ INKOS_LLM_MODEL=gpt-4o
 
 ```
 InkOS 发布新版 → GitHub Actions 每日检测（UTC 03:00）
+→ 云端构建 amd64 + arm64 → 推送 Docker Hub + GHCR → Trivy 漏洞扫描 → 冒烟测试
 ```
 
 - ✅ 构建 / 更新全在云端，本地只拉镜像，**零构建资源占用**
 - ✅ 镜像内不自更新：版本在云端固定，行为可预测、可回滚
 - ✅ 镜像带 `version` / `revision` / `created` 标签，全程可追溯
+
+**查看构建状态与报告：**
+
+- **实时状态**：README 顶部的构建徽章（私人仓库仅登录后可见）
+- **构建报告**：仓库 **Actions** 页 → 最新一次 `Build InkOS Docker` run → **Summary** 标签页，包含版本 / 架构 / 推送目标 / 构建时间
+- **漏洞扫描**：同一 run 中 `Trivy vulnerability scan` 步骤日志
 
 **更新容器：**
 
@@ -181,6 +211,7 @@ docker run -d --name watchtower \
 | InkOS | https://github.com/Narcooo/inkos |
 | Docker | https://github.com/LetterCard/inkos-docker |
 | Docker Hub | https://hub.docker.com/r/bugseeker/inkos |
+| GHCR | https://github.com/users/lettercard/packages/container/package/inkos-docker |
 
 ---
 
