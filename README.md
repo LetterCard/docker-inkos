@@ -26,15 +26,14 @@
 
 ## 📥 镜像拉取
 
-两个 Registry 每次构建同步推送，内容一致，任选其一：
+两个 Registry 每次构建同步推送，**均为公开镜像**，内容一致，任选其一：
 
 | Registry | 拉取命令 |
 | :- | :- |
-| Docker Hub（公开） | `docker pull bugseeker/inkos:latest` |
+| Docker Hub（免登录） | `docker pull bugseeker/inkos:latest` |
 | GitHub Container Registry | `docker pull ghcr.io/lettercard/inkos:latest` |
 
-> 🔒 **私人仓库说明**：本仓库为私有仓库，GHCR 包默认跟随仓库私有。
-> 拉取 GHCR 镜像前需先登录（有仓库访问权限的账号）：
+> 💡 GHCR 公开包拉取仍需先登录 ghcr.io（公开包登录即拉，无需授权）：
 >
 > ```bash
 > echo $GITHUB_TOKEN | docker login ghcr.io -u lettercard --password-stdin
@@ -171,7 +170,7 @@ InkOS 发布新版 → GitHub Actions 每日检测（UTC 03:00）
 
 **查看构建状态与报告：**
 
-- **实时状态**：README 顶部的构建徽章（私人仓库仅登录后可见）
+- **实时状态**：README 顶部的构建徽章（代码仓库为私有，徽章仅登录用户可见；镜像本身公开）
 - **构建报告**：仓库 **Actions** 页 → 最新一次 `Build InkOS Docker` run → **Summary** 标签页，包含版本 / 架构 / 推送目标 / 构建时间
 - **漏洞扫描**：同一 run 中 `Trivy vulnerability scan` 步骤日志
 
