@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   # 推送到 GitHub Container Registry (ghcr.io) 必需
   packages: write
 
@@ -61,11 +61,68 @@ jobs:
           fi
 
   # ==========================================================
-  # Docker Build
+  # Smoke test（独立 job）
+  # 构建可裁剪大量前端依赖，先构建 amd64 并启动镜像验证 Studio 与 CLI，
+  # 通过后才进入 docker-build 推送，保证 Registry 上不会出现坏镜像
+  # ==========================================================
+  smoke-test:
+    needs:
+      - check-version
+    if: needs.check-version.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build (amd64, no push)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          build-args: |
+            INKOS_VERSION=${{ needs.check-version.outputs.version }}
+          tags: inkos-smoke:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run and verify Studio + CLI
+        shell: bash
+        run: |
+          # --network host：共享宿主机网络，直接访问 4567，避免固定端口被占用
+          docker run -d --name inkos-smoke --network host inkos-smoke:latest
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:4567/ >/dev/null 2>&1; then
+              echo "Studio HTTP OK"
+              # CLI 自检：HTTP 200 只验证了服务端，CLI 才是受裁剪影响最大的面
+              echo "--- CLI check: inkos --version ---"
+              docker exec inkos-smoke inkos --version
+              echo "--- CLI check: inkos --help (head) ---"
+              docker exec inkos-smoke inkos --help | head -5
+              docker logs inkos-smoke 2>&1 | tail -5
+              docker rm -f inkos-smoke >/dev/null 2>&1
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Studio failed to respond within 60s" >&2
+          docker logs inkos-smoke 2>&1 | tail -30
+          docker rm -f inkos-smoke >/dev/null 2>&1
+          exit 1
+
+  # ==========================================================
+  # Docker Build（冒烟测试通过后才执行）
   # ==========================================================
   docker-build:
     needs:
       - check-version
+      - smoke-test
     if: needs.check-version.outputs.changed == 'true'
     runs-on: ubuntu-latest
     # 依赖树较大，npm install 耗时长，防止网络异常挂起
@@ -123,47 +180,6 @@ jobs:
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ steps.buildtime.outputs.time }}
 
-      # ------------------------------------------------------
-      # 先测后推：先构建 amd64 并冒烟测试（HTTP + CLI），
-      # 通过后才推送双平台镜像，保证 Registry 上不会出现坏镜像
-      # ------------------------------------------------------
-      - name: Build (amd64, for smoke test)
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: linux/amd64
-          push: false
-          load: true
-          build-args: |
-            INKOS_VERSION=${{ needs.check-version.outputs.version }}
-          tags: inkos-smoke:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Smoke test
-        shell: bash
-        run: |
-          # --network host：共享宿主机网络，直接访问 4567，避免固定端口被占用
-          docker run -d --name inkos-smoke --network host inkos-smoke:latest
-          for i in $(seq 1 30); do
-            if curl -sf http://127.0.0.1:4567/ >/dev/null 2>&1; then
-              echo "Studio HTTP OK"
-              # CLI 自检：HTTP 200 只验证了服务端，CLI 才是受裁剪影响最大的面
-              echo "--- CLI check: inkos --version ---"
-              docker exec inkos-smoke inkos --version
-              echo "--- CLI check: inkos --help (head) ---"
-              docker exec inkos-smoke inkos --help | head -5
-              docker logs inkos-smoke 2>&1 | tail -5
-              docker rm -f inkos-smoke >/dev/null 2>&1
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Studio failed to respond within 60s" >&2
-          docker logs inkos-smoke 2>&1 | tail -30
-          docker rm -f inkos-smoke >/dev/null 2>&1
-          exit 1
-
       - name: Build and Push Docker Image (multi-arch)
         uses: docker/build-push-action@v7
         with:
@@ -207,40 +223,3 @@ jobs:
             echo ""
             echo "> 冒烟测试（HTTP + CLI）已通过后才推送；漏洞扫描见上方 Trivy 步骤日志。"
           } >> "$GITHUB_STEP_SUMMARY"
-
-      # ------------------------------------------------------
-      # 生成 status.svg 并提交回仓库，供 README 内嵌展示构建状态
-      # （workflow 无 push 触发器，提交 status.svg 不会再次触发构建）
-      # ------------------------------------------------------
-      - name: Generate build status SVG
-        shell: bash
-        run: |
-          cat > status.svg <<EOF
-          <svg xmlns="http://www.w3.org/2000/svg" width="560" height="188" viewBox="0 0 560 188" role="img" aria-label="InkOS Docker 构建状态">
-            <rect width="560" height="188" rx="14" fill="#0d1117"/>
-            <rect y="0" width="560" height="46" rx="14" fill="#238636"/>
-            <rect y="32" width="560" height="14" fill="#238636"/>
-            <text x="24" y="30" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="16" font-weight="600" fill="#ffffff">InkOS Docker · 构建成功</text>
-            <text x="24" y="84" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#8b949e">版本</text>
-            <text x="280" y="84" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#e6edf3">${{ needs.check-version.outputs.version }}</text>
-            <text x="24" y="114" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#8b949e">架构</text>
-            <text x="280" y="114" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#e6edf3">linux/amd64 + linux/arm64</text>
-            <text x="24" y="144" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#8b949e">构建时间</text>
-            <text x="280" y="144" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#e6edf3">${{ steps.buildtime.outputs.time }}</text>
-            <text x="24" y="174" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#8b949e">推送</text>
-            <text x="280" y="174" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="13" fill="#e6edf3">Docker Hub + GHCR</text>
-          </svg>
-          EOF
-
-      - name: Commit build status SVG
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add status.svg
-          if git diff --cached --quiet; then
-            echo "status.svg 无变化，跳过提交"
-          else
-            git commit -m "chore: 更新构建状态 SVG"
-            git push
-          fi
