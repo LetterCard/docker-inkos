@@ -17,6 +17,9 @@
 [![Arch](https://img.shields.io/badge/架构-linux%2Famd64%20%2B%20arm64-4c9f38)](https://hub.docker.com/r/bugseeker/inkos)
 [![Registry](https://img.shields.io/badge/推送-Docker%20Hub%20%2B%20GHCR-blue)](https://hub.docker.com/r/bugseeker/inkos)
 
+![交互式电影端到端流程](https://github.com/Narcooo/inkos/raw/master/assets/interactive-film-e2e.png "Interactive Film E2E")
+![Studio Play 1.5](https://github.com/Narcooo/inkos/raw/master/assets/studio-play-1-5.png "Studio Play 1.5")
+
 <sub>徽章数据全部来自 Docker Hub 公开 API，无需登录；构建成败详情见 [GitHub Actions](https://github.com/LetterCard/inkos/actions)（代码仓库为私有）</sub>
 
 </div>
