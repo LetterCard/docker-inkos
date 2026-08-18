@@ -8,19 +8,42 @@
 
 ✨ 构建与更新全在云端 · 🚀 秒级启动 · 📁 单目录持久化 · 🔄 长期自动维护
 
+<details>
+<summary><b>📦 容器设计理念（点击展开）</b></summary>
+
+<br>
+
+| 原则 | 说明 |
+|------|------|
+| **最小化** | 底层选用 `node:22-alpine`，相较 `bookworm-slim` 节省约 150MB；Studio 前端依赖已裁剪，仅保留服务端最小依赖集 |
+| **不可变** | 镜像为纯运行时环境，不含源码与开发依赖；所有版本信息在 CI 构建阶段固化，运行期间不做自更新 |
+| **自引导** | 数据层面仅暴露 `/data` 为唯一持久化目录；首次启动由 bootstrap 机制自动生成项目结构，无需人工介入 |
+
+</details>
+
 适用于 **NAS** · **家庭服务器** · **云服务器**
 
+<br>
+
+<!-- 镜像状态 -->
 [![Docker Pulls](https://img.shields.io/docker/pulls/bugseeker/inkos?label=拉取量)](https://hub.docker.com/r/bugseeker/inkos)
 [![Docker Image Version](https://img.shields.io/docker/v/bugseeker/inkos/latest?label=最新版本)](https://hub.docker.com/r/bugseeker/inkos)
 [![Docker Image Size](https://img.shields.io/docker/image-size/bugseeker/inkos/latest?label=镜像大小)](https://hub.docker.com/r/bugseeker/inkos)
 [![Last Updated](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fhub.docker.com%2Fv2%2Frepositories%2Fbugseeker%2Finkos%2Ftags%2Flatest&query=last_updated&label=最近构建&color=blue)](https://hub.docker.com/r/bugseeker/inkos)
+
+<!-- 平台信息 -->
 [![Arch](https://img.shields.io/badge/架构-linux%2Famd64%20%2B%20arm64-4c9f38)](https://hub.docker.com/r/bugseeker/inkos)
 [![Registry](https://img.shields.io/badge/推送-Docker%20Hub%20%2B%20GHCR-blue)](https://hub.docker.com/r/bugseeker/inkos)
 
-![交互式电影端到端流程](https://github.com/Narcooo/inkos/raw/master/assets/interactive-film-e2e.png "Interactive Film E2E")
-![Studio Play 1.5](https://github.com/Narcooo/inkos/raw/master/assets/studio-play-1-5.png "Studio Play 1.5")
+<br>
 
-<sub>徽章数据全部来自 Docker Hub 公开 API，无需登录；构建成败详情见 [GitHub Actions](https://github.com/LetterCard/inkos/actions)（代码仓库为私有）</sub>
+<img src="https://github.com/Narcooo/inkos/raw/master/assets/interactive-film-e2e.png" width="800" alt="交互式电影端到端流程">
+
+<img src="https://github.com/Narcooo/inkos/raw/master/assets/studio-play-1-5.png" width="800" alt="Studio Play 1.5">
+
+<br>
+
+> 📊 徽章数据来自 Docker Hub 公开 API，无需登录
 
 </div>
 
