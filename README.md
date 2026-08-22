@@ -194,7 +194,7 @@ INKOS_LLM_MODEL=gpt-4o
 
 - ✅ 构建 / 更新全在云端，本地只拉镜像，**零构建资源占用**
 - ✅ 镜像内禁止自更新：版本在云端固定，行为可预测、可回滚
-- ✅ 镜像带 `version` / `revision` / `created` 标签，全程可追溯
+- ✅ 镜像带 `version` / `revision` / `created` 标签，全程可追溯。
 
 
 **更新容器：**
