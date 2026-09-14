@@ -1,4 +1,4 @@
-name: Build InkOS Docker
+name: 构建并发布镜像
 
 on:
   # 定时检测上游（npm）新版本并构建
