@@ -1,6 +1,6 @@
 # =====================================================
 # .dockerignore — Docker 构建上下文排除清单
-# 本镜像 Dockerfile 只 COPY docker-entrypoint.sh，
+# 本镜像 Dockerfile 只 COPY entrypoint.sh，
 # 其余文件不参与构建；排除后减小上下文、加速打包
 # =====================================================
 
@@ -9,6 +9,6 @@
 
 # 只放行构建必需文件
 !Dockerfile
-!docker-entrypoint.sh
+!entrypoint.sh
 !scripts/
 !scripts/trim-node-modules.cjs
