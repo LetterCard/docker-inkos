@@ -85,17 +85,17 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: 构建 (amd64, 不推送)
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: linux/amd64
-          push: false
-          load: true
-          build-args: |
-            INKOS_VERSION=${{ needs.check-version.outputs.version }}
-          tags: inkos-smoke:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker buildx build \
+            --platform linux/amd64 \
+            --load \
+            --build-arg "INKOS_VERSION=${{ needs.check-version.outputs.version }}" \
+            -t inkos-smoke:latest \
+            --cache-from type=gha,scope=smoke \
+            --cache-to type=gha,scope=smoke,mode=max \
+            .
 
       - name: 启动并验证 Studio + CLI
         shell: bash
@@ -156,23 +156,23 @@ jobs:
           echo "ghcr=ghcr.io/${{ env.GHCR_IMAGE }}" >> "$GITHUB_OUTPUT"
 
       - name: 构建并推送 amd64 (中间标签)
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: linux/amd64
-          push: true
-          build-args: |
-            INKOS_VERSION=${{ needs.check-version.outputs.version }}
-          tags: |
-            ${{ env.IMAGE_NAME }}:amd64
-            ${{ steps.images.outputs.ghcr }}:amd64
-          labels: |
-            org.opencontainers.image.title=InkOS Docker
-            org.opencontainers.image.version=${{ needs.check-version.outputs.version }}
-            org.opencontainers.image.source=https://github.com/Narcooo/inkos
-            org.opencontainers.image.revision=${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=${{ needs.check-version.outputs.version }}
+          docker buildx build \
+            --platform linux/amd64 \
+            --push \
+            --build-arg "INKOS_VERSION=${VERSION}" \
+            -t "${{ env.IMAGE_NAME }}:amd64" \
+            -t "${{ steps.images.outputs.ghcr }}:amd64" \
+            --label "org.opencontainers.image.title=InkOS Docker" \
+            --label "org.opencontainers.image.version=${VERSION}" \
+            --label "org.opencontainers.image.source=https://github.com/Narcooo/inkos" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --cache-from type=gha,scope=amd64 \
+            --cache-to type=gha,scope=amd64,mode=max \
+            .
 
   build-arm64:
     name: 构建并推送 arm64
@@ -210,23 +210,23 @@ jobs:
           echo "ghcr=ghcr.io/${{ env.GHCR_IMAGE }}" >> "$GITHUB_OUTPUT"
 
       - name: 构建并推送 arm64 (中间标签)
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          platforms: linux/arm64
-          push: true
-          build-args: |
-            INKOS_VERSION=${{ needs.check-version.outputs.version }}
-          tags: |
-            ${{ env.IMAGE_NAME }}:arm64
-            ${{ steps.images.outputs.ghcr }}:arm64
-          labels: |
-            org.opencontainers.image.title=InkOS Docker
-            org.opencontainers.image.version=${{ needs.check-version.outputs.version }}
-            org.opencontainers.image.source=https://github.com/Narcooo/inkos
-            org.opencontainers.image.revision=${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION=${{ needs.check-version.outputs.version }}
+          docker buildx build \
+            --platform linux/arm64 \
+            --push \
+            --build-arg "INKOS_VERSION=${VERSION}" \
+            -t "${{ env.IMAGE_NAME }}:arm64" \
+            -t "${{ steps.images.outputs.ghcr }}:arm64" \
+            --label "org.opencontainers.image.title=InkOS Docker" \
+            --label "org.opencontainers.image.version=${VERSION}" \
+            --label "org.opencontainers.image.source=https://github.com/Narcooo/inkos" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --cache-from type=gha,scope=arm64 \
+            --cache-to type=gha,scope=arm64,mode=max \
+            .
 
   # ========== 阶段 4: 合并多架构清单 + 扫描 + 摘要 ==========
   merge-manifest:
