@@ -100,26 +100,57 @@ jobs:
       - name: 启动并验证 Studio + CLI
         shell: bash
         run: |
+          set -euo pipefail
+          VERSION=${{ needs.check-version.outputs.version }}
           # --network host：共享宿主机网络，直接访问 4567，避免固定端口被占用
           docker run -d --name inkos-smoke --network host inkos-smoke:latest
+
+          STUDIO_OK="false"
           for i in $(seq 1 30); do
             if curl -sf http://127.0.0.1:4567/ >/dev/null 2>&1; then
-              echo "Studio HTTP OK"
-              # CLI 自检：HTTP 200 只验证了服务端，CLI 才是受裁剪影响最大的面
-              echo "--- CLI check: inkos --version ---"
-              docker exec inkos-smoke inkos --version
-              echo "--- CLI check: inkos --help (head) ---"
-              docker exec inkos-smoke inkos --help | head -5
-              docker logs inkos-smoke 2>&1 | tail -5
-              docker rm -f inkos-smoke >/dev/null 2>&1
-              exit 0
+              STUDIO_OK="true"
+              break
             fi
             sleep 2
           done
-          echo "Studio failed to respond within 60s" >&2
-          docker logs inkos-smoke 2>&1 | tail -30
+
+          if [[ "$STUDIO_OK" != "true" ]]; then
+            echo "Studio failed to respond within 60s" >&2
+            docker logs inkos-smoke 2>&1 | tail -30
+            docker rm -f inkos-smoke >/dev/null 2>&1
+            {
+              echo "## 🔥 InkOS 冒烟测试失败"
+              echo ""
+              echo "- **版本**：${VERSION}"
+              echo "- **Studio HTTP**：60s 内未响应"
+              echo "- **构建产物**：amd64（未推送）"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "Studio HTTP OK"
+          # CLI 自检：HTTP 200 只验证了服务端，CLI 才是受裁剪影响最大的面
+          CLI_VERSION=$(docker exec inkos-smoke inkos --version 2>&1 || true)
+          CLI_HELP=$(docker exec inkos-smoke inkos --help 2>&1 | head -5 || true)
+          echo "--- CLI check: inkos --version ---"
+          echo "${CLI_VERSION}"
+          echo "--- CLI check: inkos --help (head) ---"
+          echo "${CLI_HELP}"
+          docker logs inkos-smoke 2>&1 | tail -5
           docker rm -f inkos-smoke >/dev/null 2>&1
-          exit 1
+
+          # 写入 Actions 摘要：通过后才进入分架构构建推送，保证 Registry 不出现坏镜像
+          {
+            echo "## ✅ InkOS 冒烟测试通过"
+            echo ""
+            echo "- **版本**：${VERSION}"
+            echo "- **Studio HTTP**：200 OK (http://127.0.0.1:4567/)"
+            echo "- **CLI** \`inkos --version\`：**${CLI_VERSION}**"
+            echo ""
+            echo '```'
+            echo "${CLI_HELP}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ========== 阶段 3: 分架构并行构建 (amd64 / arm64) ==========
   build-amd64:
